@@ -1,0 +1,18 @@
+# Build outputs
+*.cs
+*.asi
+*.obj
+*.pdb
+*.ilk
+*.lib
+*.exp
+bin/
+obj/
+Debug/
+Release/
+.vs/
+
+# Never commit game files or logs
+*.exe
+*.img
+*.log
