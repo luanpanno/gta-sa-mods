@@ -7,8 +7,8 @@ Goal: a separate, modded copy of the game on **v1.0 US** with an ASI loader, CLE
 ## Status
 - [x] 1. Copy Steam game -> `C:\Games\GTA-SA-Modding` (done 2026-10-21, 416 files, 4.6 GB)
 - [x] 2. Downgrade the copy to v1.0 US (done 2026-10-21, verified, launches to main menu)
-- [ ] 3. Install base mods
-- [ ] 4. First launch + backup
+- [x] 3. Install base mods (done 2026-10-21)
+- [x] 4. First launch (CLEO version text shows, 2026-10-21) + backup
 - [ ] 5. Install dev tools
 - [x] 6. Repo + deploy scripts
 
@@ -33,15 +33,18 @@ Check the exe again at any time:
 Saves: there are no existing saves on this PC (`Documents\GTA San Andreas User Files` doesn't exist yet), so start a new game.
 
 ## 3. Base mods (all extracted into `C:\Games\GTA-SA-Modding`)
-| Mod | Why | Source |
-|---|---|---|
-| CLEO 5 (5.4.0+) | Script runtime. The release package already includes an ASI loader. | https://github.com/cleolibrary/CLEO5/releases |
-| Ultimate ASI Loader | Loads `.asi` plugins (skip it if CLEO's package already includes it) | https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases |
-| SilentPatch | Bug fixes and modern-Windows compatibility | https://github.com/CookiePLMonster/SilentPatch/releases |
-| Modloader | One folder per mod, so the game files stay clean | https://github.com/thelink2012/modloader/releases |
-| *(optional)* Widescreen fix | Proper widescreen/HUD | https://github.com/ThirteenAG/WidescreenFixesPack/releases |
+Installed 2026-10-21:
 
-Install order: CLEO 5 -> SilentPatch -> Modloader. Each one's readme lists the files to copy. They usually go into the game root.
+| Mod | Version / asset | Files in the game root | Source |
+|---|---|---|---|
+| CLEO 5 + Ultimate ASI Loader | v5.4.0, `SA.CLEO-v5.4.0+Ultimate_ASI_Loader.zip` | `CLEO.asi`, `bass.dll`, `cleo\`, and `vorbisFile.dll` (the ASI loader) | https://github.com/cleolibrary/CLEO5/releases |
+| SilentPatch | 1.1 build 34.1, `SilentPatchSA.zip` | `SilentPatchSA.asi`, `SilentPatchSA.ini` | https://github.com/CookiePLMonster/SilentPatch/releases |
+| Modloader | v0.3.10, `modloader.zip` | `modloader.asi`, `modloader\` | https://github.com/thelink2012/modloader/releases |
+| *(optional, later)* Widescreen fix | | | https://github.com/ThirteenAG/WidescreenFixesPack/releases |
+
+- The ASI loader replaces the game's `vorbisFile.dll`. The original is backed up as **`vorbisFile.dll.original`**.
+- To uninstall everything: delete the files listed above and rename `vorbisFile.dll.original` back to `vorbisFile.dll`.
+- Logs to check if something breaks: `cleo.log` and `modloader\modloader.log`, both in the game folder.
 
 ## 4. First launch
 1. Run `C:\Games\GTA-SA-Modding\gta_sa.exe` directly.
