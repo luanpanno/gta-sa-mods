@@ -8,8 +8,8 @@ Goal: a separate, modded copy of the game on **v1.0 US** with an ASI loader, CLE
 - [x] 1. Copy Steam game -> `C:\Games\GTA-SA-Modding` (done 2026-10-21, 416 files, 4.6 GB)
 - [x] 2. Downgrade the copy to v1.0 US (done 2026-10-21, verified, launches to main menu)
 - [x] 3. Install base mods (done 2026-10-21)
-- [x] 4. First launch (CLEO version text shows, 2026-10-21) + backup
-- [ ] 5. Install dev tools
+- [x] 4. First launch (CLEO version text shows) + backup `C:\Games\GTA-SA-Modding-clean.zip` (3.9 GB, 2026-10-21)
+- [x] 5. Install dev tools (Sanny Builder 4.2.0, VS 2022 Build Tools / MSVC 14.44; plugin-sdk in Phase 2)
 - [x] 6. Repo + deploy scripts
 
 ## 2. Downgrade to 1.0 US
@@ -49,13 +49,14 @@ Installed 2026-10-21:
 ## 4. First launch
 1. Run `C:\Games\GTA-SA-Modding\gta_sa.exe` directly.
 2. Check that CLEO's version text appears in the main menu.
-3. Quit and zip the folder as `C:\Games\GTA-SA-Modding-clean.zip` (a "known good" restore point).
+3. Quit and zip the folder as `C:\Games\GTA-SA-Modding-clean.zip` (a "known good" restore point). Leave out the `*.sabackup` files.
+   To restore: delete `C:\Games\GTA-SA-Modding` and extract the zip in its place.
 
 ## 5. Dev tools
-| Tool | Use | Source |
+| Tool | Use | Installed |
 |---|---|---|
-| Sanny Builder 4 | Write and compile CLEO scripts (`.txt` -> `.cs`) | https://sannybuilder.com |
-| Visual Studio 2022 Build Tools | C++ compiler (MSVC, x86). Workload: **Desktop development with C++** | https://visualstudio.microsoft.com/downloads/ (Tools for Visual Studio) |
+| Sanny Builder 4.2.0 | Write and compile CLEO scripts (`.txt` -> `.cs`) | Portable, `C:\Tools\SannyBuilder\sanny.exe`. From [sannybuilder/dev releases](https://github.com/sannybuilder/dev/releases) |
+| Visual Studio 2022 Build Tools 17.14 | C++ compiler (MSVC, x86). Workload: **Desktop development with C++** | Installed with `winget install Microsoft.VisualStudio.2022.BuildTools` and the `VCTools` workload |
 | plugin-sdk | GTA SA engine headers and lib | https://github.com/DK22Pac/plugin-sdk (clone to `C:\dev\plugin-sdk`) |
 | VSCode C/C++ extension | IntelliSense | VSCode marketplace (`ms-vscode.cpptools`) |
 
