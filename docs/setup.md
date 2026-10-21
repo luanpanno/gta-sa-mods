@@ -1,4 +1,4 @@
-# Phase 0: Environment setup
+﻿# Phase 0: Environment setup
 
 Goal: a separate, modded copy of the game on **v1.0 US** with an ASI loader, CLEO, SilentPatch and Modloader, plus the dev tools.
 
@@ -6,7 +6,7 @@ Goal: a separate, modded copy of the game on **v1.0 US** with an ASI loader, CLE
 
 ## Status
 - [x] 1. Copy Steam game -> `C:\Games\GTA-SA-Modding` (done 2026-10-21, 416 files, 4.6 GB)
-- [ ] 2. Downgrade the copy to v1.0 US
+- [x] 2. Downgrade the copy to v1.0 US (done 2026-10-21, verified, launches to main menu)
 - [ ] 3. Install base mods
 - [ ] 4. First launch + backup
 - [ ] 5. Install dev tools
@@ -15,14 +15,22 @@ Goal: a separate, modded copy of the game on **v1.0 US** with an ASI loader, CLE
 ## 2. Downgrade to 1.0 US
 Your Steam build is the newer one (`gta-sa.exe`, about 5.9 MB). CLEO, plugin-sdk and almost every mod need the original `gta_sa.exe` 1.0 US (14,383,616 bytes).
 
-- Use a "GTA SA Downgrader" that supports the **current Steam** release. Before running anything we'll agree together on the exact download link. Downgraders are community tools and come from forums and mod sites, not GitHub.
-- Run it **only on `C:\Games\GTA-SA-Modding`**, never on the Steam folder.
-- Pick the options that restore v1.0 US. The extras (radio songs, original audio) are optional.
-- Check the result: `C:\Games\GTA-SA-Modding\gta_sa.exe` exists and is 14,383,616 bytes:
-  ```powershell
-  (Get-Item C:\Games\GTA-SA-Modding\gta_sa.exe).Length
-  ```
-- Saves: v1.0 might not read saves from the Steam version. Start a fresh game or use a 100% save made for 1.0. Saves are stored in `Documents\GTA San Andreas User Files`.
+**Used:** the "San Andreas Downgrader" from [GTAForums topic 927016](https://gtaforums.com/topic/927016-san-andreas-downgrader/), run on `C:\Games\GTA-SA-Modding` only.
+(An open-source alternative is [Jetpack Downgrader](https://github.com/Zalexanninev15/Jetpack-Downgrader), if this ever needs redoing.)
+
+**What it changed (checked 2026-10-21):**
+- `gta_sa.exe` is 14,383,616 bytes, the v1.0 US size. SHA256 `A559AA77...CBD26`. The old `gta-sa.exe` was replaced by the same v1.0 exe.
+- It replaced the v1.0 versions of `anim.img`, `gta3.img`, `gta_int.img`, `main.scm`, `script.img`, `TrakLkup.dat` and the radio `audio\streams` (so the removed songs are back).
+- The originals were kept as `*.sabackup`, about 1.8 GB in total. Keep them until the game is confirmed working, then they can be deleted.
+
+From now on, launch **`gta_sa.exe`** only.
+
+Check the exe again at any time:
+```powershell
+(Get-Item C:\Games\GTA-SA-Modding\gta_sa.exe).Length   # 14383616
+```
+
+Saves: there are no existing saves on this PC (`Documents\GTA San Andreas User Files` doesn't exist yet), so start a new game.
 
 ## 3. Base mods (all extracted into `C:\Games\GTA-SA-Modding`)
 | Mod | Why | Source |
