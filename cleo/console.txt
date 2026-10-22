@@ -1,0 +1,499 @@
+// Phase 1.3: Spawn console
+// Sanny Builder 4, mode: GTA SA (v1.0 - SBL)
+//
+//   F9         : open / close the console (CJ freezes while it's open)
+//   type       : letters, digits, space. Backspace deletes
+//   Enter      : run the command
+//
+// Commands:
+//   car <name|id>      car infernus / car 411 / car hydra
+//   weapon <name>      weapon minigun (try: pistol deagle shotgun spas uzi mp5 ak47 m4 sniper rpg minigun flamethrower grenade katana chainsaw parachute)
+//   money <amount>     money 1000000
+//   wanted <0-6>       wanted 0
+//   health             full health + armor
+//   tp <place>         tp marker (map waypoint) / grove / sf / lv / chiliad
+
+{$CLEO .cs}
+
+script_name {name} 'console'
+
+const MAX_LEN = 40
+
+int inputText = allocate_memory {size} 64 // the typed text, as a C string
+int cmd = allocate_memory {size} 64  // first word of the inputText
+int len = 0
+int isOpen = false
+int key
+int addr
+
+wait {time} 3000
+
+while true
+    wait {time} 0
+
+    // --- open / close ---------------------------------------------------
+    if
+        2080: is_key_just_pressed {keyCode} KeyCode.F9
+    then
+        if
+            isOpen == false
+        then
+            if
+                is_player_playing $player1
+            then
+                isOpen = true
+                len = 0
+                write_memory {address} inputText {size} 1 {value} 0 {vp} false // empty string
+                set_player_control $player1 {state} false
+            end
+        else
+            isOpen = false
+            set_player_control $player1 {state} true
+        end
+    end
+
+    if
+        isOpen == false
+    then
+        continue
+    end
+
+    // --- typing ----------------------------------------------------------
+    key = -1
+    if
+        key = get_key_just_pressed_in_range {minKeyCode} KeyCode.A {maxKeyCode} KeyCode.Z
+    then
+        key += 32 // 'A'..'Z' key codes -> lowercase ASCII
+    end
+    if
+        key = get_key_just_pressed_in_range {minKeyCode} KeyCode.Num0 {maxKeyCode} KeyCode.Num9
+    then
+        // top-row digits: key code == ASCII already
+    end
+    if
+        key = get_key_just_pressed_in_range {minKeyCode} KeyCode.NumPad0 {maxKeyCode} KeyCode.NumPad9
+    then
+        key -= 48 // numpad 0-9 -> ASCII '0'-'9'
+    end
+    if
+        2080: is_key_just_pressed {keyCode} KeyCode.Space
+    then
+        key = 32
+    end
+
+    if and
+        key <> -1
+        len < MAX_LEN
+    then
+        addr = inputText
+        addr += len
+        write_memory {address} addr {size} 1 {value} key {vp} false
+        addr += 1
+        write_memory {address} addr {size} 1 {value} 0 {vp} false // keep it null-terminated
+        len += 1
+    end
+
+    if and
+        2080: is_key_just_pressed {keyCode} KeyCode.Back
+        len > 0
+    then
+        len -= 1
+        addr = inputText
+        addr += len
+        write_memory {address} addr {size} 1 {value} 0 {vp} false
+    end
+
+    if
+        2080: is_key_just_pressed {keyCode} KeyCode.Return
+    then
+        isOpen = false
+        set_player_control $player1 {state} true
+        if
+            len > 0
+        then
+            RUN_COMMAND(inputText, len, cmd)
+        end
+    end
+
+    // --- draw ------------------------------------------------------------
+    if
+        isOpen == true
+    then
+        use_text_commands {state} true
+        set_text_font {font} Font.Subtitles
+        set_text_scale {width} 0.35 {height} 1.4
+        set_text_colour {rgb} 180 180 180 {alpha} 255
+        set_text_edge {size} 1 {rgb} 0 0 0 {alpha} 255
+        display_text_formatted {pos} 20.0 375.0 {format} "car / weapon / money / wanted / health / tp (marker grove sf lv chiliad)"
+
+        set_text_font {font} Font.Subtitles
+        set_text_scale {width} 0.5 {height} 2.0
+        set_text_colour {rgb} 255 255 255 {alpha} 255
+        set_text_edge {size} 1 {rgb} 0 0 0 {alpha} 255
+        display_text_formatted {pos} 20.0 395.0 {format} "> %s_" {args} inputText
+    end
+end
+
+terminate_this_custom_script
+
+
+// Splits "word rest" and runs the matching command.
+//   inputText: pointer to the typed text, len: its length, cmd: scratch buffer for the first word
+function RUN_COMMAND(inputText: int, len: int, cmd: int)
+    // find the first space
+    int spacePos = 0
+    int b
+    int addr
+    while spacePos < len
+        addr = inputText
+        addr += spacePos
+        b = read_memory {address} addr {size} 1 {vp} false
+        if
+            b == 32
+        then
+            break
+        end
+        spacePos += 1
+    end
+
+    // cmd = copy of the first word (cut the copy at the space)
+    string_format cmd = "%s" inputText
+    addr = cmd
+    addr += spacePos
+    write_memory {address} addr {size} 1 {value} 0 {vp} false
+
+    // arg = pointer into inputText, right after the space ("" if there was no space)
+    int arg = inputText
+    arg += spacePos
+    if
+        spacePos < len
+    then
+        arg += 1
+    end
+
+    // argNum = arg as a number, or -1 if it isn't one
+    int argNum = -1
+    int i = spacePos
+    i += 1
+    while i < len
+        addr = inputText
+        addr += i
+        b = read_memory {address} addr {size} 1 {vp} false
+        if or
+            b < 48
+            b > 57
+        then
+            argNum = -1
+            break
+        end
+        if
+            argNum < 0
+        then
+            argNum = 0
+        end
+        argNum *= 10
+        b -= 48
+        argNum += b
+        i += 1
+    end
+
+    if
+        is_text_equal {text} cmd {another} "car" {ignoreCase} true
+    then
+        int model = -1
+        if and
+            argNum >= 400
+            argNum <= 611
+        then
+            model = argNum
+        else
+            model = FIND_VEHICLE(arg)
+        end
+        if
+            model == -1
+        then
+            print_help_formatted {text} "~r~Unknown vehicle:~s~ %s" {args} arg
+        else
+            SPAWN_CAR(model)
+            print_help_formatted {text} "Spawned vehicle ~y~%d" {args} model
+        end
+        return
+    end
+
+    if
+        is_text_equal {text} cmd {another} "weapon" {ignoreCase} true
+    then
+        int weaponType = WEAPON_TYPE(arg)
+        if
+            weaponType == -1
+        then
+            print_help_formatted {text} "~r~Unknown weapon:~s~ %s" {args} arg
+        else
+            int weaponModel = get_weapontype_model {weaponType} weaponType
+            request_model {modelId} weaponModel
+            while not has_model_loaded {modelId} weaponModel
+                wait {time} 0
+            end
+            give_weapon_to_char $scplayer {weaponType} weaponType {ammo} 500
+            mark_model_as_no_longer_needed {modelId} weaponModel
+            print_help_formatted {text} "Weapon: ~y~%s" {args} arg
+        end
+        return
+    end
+
+    if
+        is_text_equal {text} cmd {another} "money" {ignoreCase} true
+    then
+        if
+            argNum < 0
+        then
+            print_help_string {text} "Usage: money <amount>"
+        else
+            add_score $player1 {money} argNum
+        end
+        return
+    end
+
+    if
+        is_text_equal {text} cmd {another} "wanted" {ignoreCase} true
+    then
+        if or
+            argNum < 0
+            argNum > 6
+        then
+            print_help_string {text} "Usage: wanted <0-6>"
+        else
+            if
+                argNum == 0
+            then
+                clear_wanted_level $player1
+            else
+                alter_wanted_level $player1 {wantedLevel} argNum
+            end
+        end
+        return
+    end
+
+    if
+        is_text_equal {text} cmd {another} "health" {ignoreCase} true
+    then
+        set_char_health $scplayer {health} 100
+        add_armour_to_char $scplayer {amount} 100
+        print_help_string {text} "Health and armor restored"
+        return
+    end
+
+    if
+        is_text_equal {text} cmd {another} "tp" {ignoreCase} true
+    then
+        TELEPORT(arg)
+        return
+    end
+
+    print_help_formatted {text} "~r~Unknown command:~s~ %s" {args} cmd
+end
+
+
+// Looks up a vehicle by its game name (as in data\vehicles.ide), e.g. "infernus". Returns -1 if not found.
+function FIND_VEHICLE(name: int): int
+    longString vehicleName
+    int id = 400
+    while id <= 611
+        vehicleName = get_name_of_vehicle_model {modelId} id
+        if
+            is_text_equal {text} vehicleName {another} name {ignoreCase} true
+        then
+            return id
+        end
+        id += 1
+    end
+    return -1
+end
+
+
+function SPAWN_CAR(model: int)
+    request_model {modelId} model
+    while not has_model_loaded {modelId} model
+        wait {time} 0
+    end
+
+    float x, y, z
+    float side = 0.0
+    if
+        is_char_in_any_car $scplayer
+    then
+        side = 4.0
+    end
+    x, y, z = get_offset_from_char_in_world_coords $scplayer {offset} side 6.0 0.5
+
+    int spawnedCar = create_car {modelId} model {pos} x y z
+    float heading = get_char_heading $scplayer
+    set_car_heading spawnedCar {heading} heading
+    int area = get_area_visible
+    set_vehicle_area_visible spawnedCar {interiorId} area
+
+    mark_model_as_no_longer_needed {modelId} model
+    mark_car_as_no_longer_needed spawnedCar // the game deletes it once you're far away
+end
+
+
+// Weapon name -> weapon type ID. Returns -1 if unknown.
+function WEAPON_TYPE(name: int): int
+    int weaponType = -1
+    if
+        is_text_equal {text} name {another} "katana" {ignoreCase} true
+    then
+        weaponType = 8
+    end
+    if
+        is_text_equal {text} name {another} "chainsaw" {ignoreCase} true
+    then
+        weaponType = 9
+    end
+    if
+        is_text_equal {text} name {another} "grenade" {ignoreCase} true
+    then
+        weaponType = 16
+    end
+    if
+        is_text_equal {text} name {another} "pistol" {ignoreCase} true
+    then
+        weaponType = 22
+    end
+    if
+        is_text_equal {text} name {another} "deagle" {ignoreCase} true
+    then
+        weaponType = 24
+    end
+    if
+        is_text_equal {text} name {another} "shotgun" {ignoreCase} true
+    then
+        weaponType = 25
+    end
+    if
+        is_text_equal {text} name {another} "spas" {ignoreCase} true
+    then
+        weaponType = 27
+    end
+    if
+        is_text_equal {text} name {another} "uzi" {ignoreCase} true
+    then
+        weaponType = 28
+    end
+    if
+        is_text_equal {text} name {another} "mp5" {ignoreCase} true
+    then
+        weaponType = 29
+    end
+    if
+        is_text_equal {text} name {another} "ak47" {ignoreCase} true
+    then
+        weaponType = 30
+    end
+    if
+        is_text_equal {text} name {another} "m4" {ignoreCase} true
+    then
+        weaponType = 31
+    end
+    if
+        is_text_equal {text} name {another} "sniper" {ignoreCase} true
+    then
+        weaponType = 34
+    end
+    if
+        is_text_equal {text} name {another} "rpg" {ignoreCase} true
+    then
+        weaponType = 35
+    end
+    if
+        is_text_equal {text} name {another} "flamethrower" {ignoreCase} true
+    then
+        weaponType = 37
+    end
+    if
+        is_text_equal {text} name {another} "minigun" {ignoreCase} true
+    then
+        weaponType = 38
+    end
+    if
+        is_text_equal {text} name {another} "parachute" {ignoreCase} true
+    then
+        weaponType = 46
+    end
+    return weaponType
+end
+
+
+// Teleports CJ (or his car) to a named place. Only X/Y are stored; Z comes from the ground height.
+function TELEPORT(place: int)
+    float x = 0.0
+    float y = 0.0
+    float z
+    int found = true
+
+    if
+        is_text_equal {text} place {another} "marker" {ignoreCase} true
+    then
+        if
+            x, y, z = get_target_blip_coords
+        then
+            // waypoint set on the pause-menu map
+        else
+            print_help_string {text} "~r~No map marker.~s~ Set one on the pause menu map first."
+            return
+        end
+    else
+        if
+            is_text_equal {text} place {another} "grove" {ignoreCase} true
+        then
+            x = 2495.0
+            y = -1687.0
+        else
+            if
+                is_text_equal {text} place {another} "sf" {ignoreCase} true
+            then
+                x = -2026.0
+                y = 170.0
+            else
+                if
+                    is_text_equal {text} place {another} "lv" {ignoreCase} true
+                then
+                    x = 2027.0
+                    y = 1008.0
+                else
+                    if
+                        is_text_equal {text} place {another} "chiliad" {ignoreCase} true
+                    then
+                        x = -2321.0
+                        y = -1638.0
+                    else
+                        found = false
+                    end
+                end
+            end
+        end
+    end
+
+    if
+        found == false
+    then
+        print_help_formatted {text} "~r~Unknown place:~s~ %s (marker grove sf lv chiliad)" {args} place
+        return
+    end
+
+    // stream the destination in, then find the ground height there
+    request_collision {pos} x y
+    load_scene {pos} x y 20.0
+    z = get_ground_z_for_3d_coord {pos} x y 1000.0
+    z += 1.0
+
+    if
+        is_char_in_any_car $scplayer
+    then
+        int vehicle = store_car_char_is_in_no_save $scplayer
+        set_car_coordinates vehicle {pos} x y z
+    else
+        set_char_coordinates $scplayer {pos} x y z
+    end
+    print_help_formatted {text} "Teleported to ~y~%s" {args} place
+end

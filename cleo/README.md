@@ -6,6 +6,7 @@ Sources are `.txt` files written in Sanny Builder 4 syntax. Compiling (F6) produ
 |---|---|---|
 | `hello.txt` | 1.1 | F5 shows a help box with a press counter |
 | `vehicle_spawner.txt` | 1.2 | F7/F8 chooses one of 12 vehicles, F6 spawns it in front of CJ, Shift+F6 spawns it and puts CJ in it |
+| `console.txt` | 1.3 | F9 opens a command console: `car infernus`, `car 411`, `weapon minigun`, `money 1000000`, `wanted 0`, `health`, `tp marker` / `grove` / `sf` / `lv` / `chiliad` |
 
 ## Sanny Builder: first-time setup
 1. Run `C:\Tools\SannyBuilder\sanny.exe`.
@@ -47,6 +48,15 @@ This copies `hello.cs` to `modloader\MyCleoMods\` and starts the game. Load a sa
 ### New in vehicle_spawner.txt
 - `function NAME(arg: int): int ... return x ... end` defines a function with its own local variables. Call it like `x = NAME(1)`. If a function returns a value, Sanny **requires** you to store it in a variable, even when you don't need it. Don't pass enum values like `KeyCode.F6` straight into your own functions; that gives error 0049 "Not enough parameters". Use them directly in commands, or store them in an `int` variable first.
 - Variable names can't match a class name, in any letter case. For example `car`, `char`, `player`, `object` and `blip` are all taken. Use `spawnedCar`, `myPed` and so on.
+- Variable names also can't match a command name. For example `line` is a drawing command, so it's taken.
+
+### New in console.txt
+- **Strings as memory buffers:** `allocate_memory 64` returns a pointer (an int) to 64 bytes. CLEO 5 accepts that pointer anywhere a string is expected (`%s`, `is_text_equal`...). It's the C-style `char*`.
+- `read_memory` / `write_memory` read and write single bytes. We write ASCII codes plus a `0` terminator to build the typed text.
+- `get_key_just_pressed_in_range A Z` returns which key went down this frame. Letter key codes equal uppercase ASCII, and +32 makes them lowercase.
+- `2080: is_key_just_pressed` uses an **opcode prefix** to pick one specific command. Two plugins define that name, and we want CLEO 5's (2080), not CLEO+'s (0E3D, which isn't installed).
+- `if x, y, z = get_target_blip_coords then` is a command that both returns values and acts as a condition (false when no waypoint is set).
+- `get_ground_z_for_3d_coord` after `load_scene` lets a teleport store only X/Y. The height comes from the ground.
 - `const VEHICLE_COUNT = 12` is a compile-time constant.
 - `#INFERNUS` is a model name, which Sanny turns into ID 411 (from `data\vehicles.ide`).
 - **Model streaming:** the game only keeps a few models in memory. So you call `request_model`, wait until `has_model_loaded`, create the car, then `mark_model_as_no_longer_needed`.
