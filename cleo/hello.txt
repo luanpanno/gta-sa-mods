@@ -1,0 +1,35 @@
+// Phase 1.1: Hello world
+// Sanny Builder 4, mode: GTA SA (v1.0 - SBL)
+// Press F5 in game: shows a help box with how many times you pressed it.
+
+{$CLEO .cs}
+
+script_name {name} 'hello'
+
+// wait for the game to fade in from the black loading screen
+wait {time} 3000
+
+print_help_string {text} "~g~gta-sa-mods~s~ loaded. Press ~y~F5~s~."
+
+int presses = 0
+
+// main loop: CLEO scripts run cooperatively, so every loop MUST call wait,
+// otherwise the game freezes. wait 0 = "yield until the next frame".
+while true
+    wait {time} 0
+
+    if and
+        is_player_playing $player1 // not wasted, busted or in a cutscene
+        is_key_pressed {keyCode} KeyCode.F5
+    then
+        presses += 1
+        print_help_formatted {text} "Hello, CJ!~n~F5 pressed ~y~%d~s~ time(s)." {args} presses
+
+        // wait until F5 is released, so holding it counts as one press
+        while is_key_pressed {keyCode} KeyCode.F5
+            wait {time} 0
+        end
+    end
+end
+
+terminate_this_custom_script
