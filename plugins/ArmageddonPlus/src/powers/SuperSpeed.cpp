@@ -69,6 +69,11 @@ void SuperSpeed::Update(CPlayerPed* player, float) {
             info->m_bDoesNotGetTired = true;
 
     int lvl = Level() - 1; // array index
+    if (!player->bApplyGravity) {
+        // Flight is on (gravity off): it controls movement, don't push or launch him as well
+        m_wasStanding = false;
+        return;
+    }
     UpdateJump(player, lvl);
     UpdateRun(player, lvl);
 }

@@ -7,6 +7,7 @@
 #include "core/Menu.h"
 #include "core/PowerManager.h"
 #include "powers/ExplosionPunch.h"
+#include "powers/Flight.h"
 #include "powers/Invulnerability.h"
 #include "powers/SpawnVehicle.h"
 #include "powers/SuperSpeed.h"
@@ -47,6 +48,7 @@ public:
         Log::Info("ArmageddonPlus loaded from %s", paths::GetPluginDirPathA());
 
         // register powers here (order = order in the overlay)
+        g_powers.Register(std::make_unique<Flight>());
         g_powers.Register(std::make_unique<SuperSpeed>());
         g_powers.Register(std::make_unique<ExplosionPunch>());
         g_powers.Register(std::make_unique<Invulnerability>());

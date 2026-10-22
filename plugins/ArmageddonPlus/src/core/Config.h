@@ -8,6 +8,7 @@ class Config {
 public:
     void Load(const std::string& path);
 
+    std::string GetText(const char* section, const char* key, const char* defaultValue) const;
     int GetInt(const char* section, const char* key, int defaultValue) const;
     float GetFloat(const char* section, const char* key, float defaultValue) const;
     bool GetBool(const char* section, const char* key, bool defaultValue) const;

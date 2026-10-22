@@ -67,6 +67,11 @@ std::string Config::GetString(const char* section, const char* key) const {
     return value;
 }
 
+std::string Config::GetText(const char* section, const char* key, const char* defaultValue) const {
+    std::string value = GetString(section, key);
+    return value.empty() ? defaultValue : value;
+}
+
 int Config::GetInt(const char* section, const char* key, int defaultValue) const {
     std::string value = GetString(section, key);
     return value.empty() ? defaultValue : std::atoi(value.c_str());

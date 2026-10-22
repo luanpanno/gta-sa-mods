@@ -119,6 +119,7 @@ void PowerManager::Update() {
         }
         if (power->m_active)
             power->Update(player, dt);
+        power->UpdateAlways(player, dt);
     }
 }
 
