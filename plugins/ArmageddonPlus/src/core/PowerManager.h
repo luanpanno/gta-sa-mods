@@ -21,6 +21,7 @@ public:
 
 private:
     void SetActive(Power& power, CPlayerPed* player, bool active);
+    void StepLevel(Power& power, CPlayerPed* player); // Toggle key press: off -> 1 -> ... -> max -> off
 
     std::vector<std::unique_ptr<Power>> m_powers;
     bool m_overlayEnabled = true;

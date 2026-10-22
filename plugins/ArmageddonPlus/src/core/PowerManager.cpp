@@ -34,11 +34,26 @@ void PowerManager::SetActive(Power& power, CPlayerPed* player, bool active) {
     if (power.m_active == active)
         return;
     power.m_active = active;
-    if (active)
+    power.m_level = active ? 1 : 0;
+    if (active) {
         power.OnActivate(player);
-    else
+        power.OnLevelChanged(player, 1);
+    } else {
         power.OnDeactivate(player);
+    }
     Log::Info("%s %s", power.Id(), active ? "ON" : "OFF");
+}
+
+void PowerManager::StepLevel(Power& power, CPlayerPed* player) {
+    if (!power.m_active) {
+        SetActive(power, player, true); // off -> level 1
+    } else if (power.m_level < power.MaxLevel()) {
+        power.m_level++;
+        power.OnLevelChanged(player, power.m_level);
+        Log::Info("%s level %d", power.Id(), power.m_level);
+    } else {
+        SetActive(power, player, false); // max level -> off
+    }
 }
 
 void PowerManager::DeactivateAll(CPlayerPed* player) {
@@ -68,7 +83,7 @@ void PowerManager::Update() {
         switch (power->GetMode()) {
         case Power::Mode::Toggle:
             if (Input::JustPressed(key))
-                SetActive(*power, player, !power->m_active);
+                StepLevel(*power, player);
             break;
         case Power::Mode::Hold:
             SetActive(*power, player, Input::IsDown(key));
@@ -102,7 +117,11 @@ void PowerManager::DrawOverlay() {
         CFont::SetDropColor(CRGBA(0, 0, 0, 255));
         CFont::SetColor(power->m_active ? CRGBA(120, 255, 120, 255) : CRGBA(200, 200, 200, 200));
 
-        std::snprintf(line, sizeof(line), "[%s] %s", Config::KeyName(power->m_key), power->Name());
+        if (power->MaxLevel() > 1 && power->m_active)
+            std::snprintf(line, sizeof(line), "[%s] %s %d/%d", Config::KeyName(power->m_key), power->Name(),
+                          power->m_level, power->MaxLevel());
+        else
+            std::snprintf(line, sizeof(line), "[%s] %s", Config::KeyName(power->m_key), power->Name());
         CFont::PrintString(SCREEN_COORD_RIGHT(20.0f), y, line);
         y += SCREEN_COORD(16.0f);
     }

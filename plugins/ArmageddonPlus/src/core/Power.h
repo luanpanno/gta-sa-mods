@@ -21,19 +21,24 @@ public:
     virtual const char* Id() const = 0;   // ini section is [Power.<Id>], e.g. "SuperSpeed"
     virtual Mode GetMode() const { return Mode::Toggle; }
     virtual int DefaultKey() const { return 0; } // VK code used if the ini doesn't set Key=
+    // Toggle powers with MaxLevel() > 1: each key press steps off -> 1 -> 2 -> ... -> MaxLevel -> off.
+    virtual int MaxLevel() const { return 1; }
 
     // Read tuning values from [Power.<Id>]. Called once at startup.
     virtual void LoadConfig(const Config&, const char* section) {}
 
     virtual void OnActivate(CPlayerPed* player) {}   // Toggle/Hold: just turned on. OneShot: fire.
     virtual void OnDeactivate(CPlayerPed* player) {} // Toggle/Hold: just turned off (also on death)
+    virtual void OnLevelChanged(CPlayerPed* player, int level) {} // after OnActivate, and on every level step
     virtual void Update(CPlayerPed* player, float dt) {} // every frame while active; dt in seconds
 
     bool IsActive() const { return m_active; }
+    int Level() const { return m_level; } // 0 when off, 1..MaxLevel() when on
     int Key() const { return m_key; }
 
 private:
     friend class PowerManager;
     bool m_active = false;
+    int m_level = 0;
     int m_key = 0;
 };

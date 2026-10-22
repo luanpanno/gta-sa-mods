@@ -23,8 +23,12 @@ Log: `C:\Games\GTA-SA-Modding\ArmageddonPlus.log`.
   - `Power`: base class for every power (Toggle / Hold / OneShot)
   - `PowerManager`: hotkeys, on/off, per-frame `Update(dt)`, switches everything off on death, debug overlay
 - `src/powers/`: one class per power
+  - `SuperSpeed` (F2, 3 levels): after the game moves CJ each frame, push him further the same way (`MultiplierN`), with line-of-sight checks so he never passes through walls. Leg animations are sped up and fatigue is off. **Super jump:** on take-off (was standing, now airborne and going up), his vertical speed is replaced with `JumpN`, and he's collision-proof until he lands, so there's no fall damage.
   - `Invulnerability` (F4, toggle): proof flags on CJ and his current vehicle
   - `SpawnVehicle` (F11, one-shot): the CLEO spawner ported to engine classes (`CStreaming`, `CModelInfo`, `CAutomobile`...)
+
+## Levels
+A Toggle power that overrides `MaxLevel()` (e.g. `return 3;`) gets levels for free. Each key press steps off -> 1 -> 2 -> 3 -> off, the overlay shows `Super Speed 2/3`, and `OnLevelChanged(player, level)` / `Level()` tell the power which level it's on.
 
 ## Adding a power
 1. Create `src/powers/MyPower.h/.cpp`, subclass `Power`, and implement `Name()`, `Id()`, `DefaultKey()` and the hooks you need (`OnActivate`, `Update`, `OnDeactivate`).
