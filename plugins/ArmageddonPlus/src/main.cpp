@@ -1,32 +1,23 @@
 // ArmageddonPlus: entry point.
-// Phase 2.1: hello world. Proves the toolchain works: build -> deploy -> loaded by the game.
-//
-//   - draws "ArmageddonPlus" in the top-right corner of the HUD
-//   - F10 shows a help box with live data read from the engine (CJ's health, position)
-//   - writes ArmageddonPlus.log in the game folder
+// Wires the core framework (config, input, power manager) to the game's events and registers the powers.
+
+#include "core/Config.h"
+#include "core/Input.h"
+#include "core/Log.h"
+#include "core/PowerManager.h"
+#include "powers/Invulnerability.h"
+#include "powers/SpawnVehicle.h"
 
 #include "plugin.h"
 #include "CFont.h"
-#include "CHud.h"
-#include "CPlayerPed.h"
 
-#include <cstdio>
-#include <fstream>
+#include <memory>
 
 using namespace plugin;
 
 namespace {
 
-std::ofstream g_log;
-
-// KeyPressed() is true for every frame the key is held; this turns it into "just pressed".
-bool KeyJustPressed(unsigned int vk) {
-    static bool wasDown[256] = {};
-    bool down = KeyPressed(vk);
-    bool justPressed = down && !wasDown[vk];
-    wasDown[vk] = down;
-    return justPressed;
-}
+PowerManager g_powers;
 
 void DrawWatermark() {
     CFont::SetOrientation(ALIGN_RIGHT);
@@ -41,32 +32,30 @@ void DrawWatermark() {
     CFont::PrintString(SCREEN_COORD_RIGHT(20.0f), SCREEN_COORD_TOP(10.0f), "ArmageddonPlus");
 }
 
-void OnGameTick() {
-    CPlayerPed* player = FindPlayerPed();
-    if (!player)
-        return;
-
-    if (KeyJustPressed(VK_F10)) {
-        CVector pos = player->GetPosition();
-        static char text[200];
-        std::snprintf(text, sizeof(text),
-                      "Hello from C++!~n~Health: ~y~%.0f~s~~n~Position: ~y~%.1f, %.1f, %.1f",
-                      player->m_fHealth, pos.x, pos.y, pos.z);
-        CHud::SetHelpMessage(text, true, false, false);
-        g_log << "F10 pressed at " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
-    }
-}
-
 } // namespace
 
 class ArmageddonPlus {
 public:
     ArmageddonPlus() {
         // runs once, when the ASI loader loads us (before the game starts)
-        g_log.open("ArmageddonPlus.log", std::ios::out | std::ios::trunc);
-        g_log << "ArmageddonPlus loaded" << std::endl;
+        Log::Init(paths::GetGameDirRelativePathA("ArmageddonPlus.log"));
+        Log::Info("ArmageddonPlus loaded from %s", paths::GetPluginDirPathA());
 
-        Events::gameProcessEvent += OnGameTick; // every game frame (logic)
-        Events::drawHudEvent += DrawWatermark;  // every frame, while the HUD is drawn
+        // register powers here (order = order in the overlay)
+        g_powers.Register(std::make_unique<Invulnerability>());
+        g_powers.Register(std::make_unique<SpawnVehicle>());
+
+        Config config;
+        config.Load(paths::GetPluginDirRelativePathA("ArmageddonPlus.ini"));
+        g_powers.LoadConfig(config);
+
+        Events::gameProcessEvent += [] { // every game frame (logic)
+            Input::Update();
+            g_powers.Update();
+        };
+        Events::drawHudEvent += [] { // every frame, while the HUD is drawn
+            DrawWatermark();
+            g_powers.DrawOverlay();
+        };
     }
 } g_armageddonPlus; // global instance: its constructor is our "main"
