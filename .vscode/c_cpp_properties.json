@@ -1,0 +1,33 @@
+{
+    "configurations": [
+        {
+            "name": "GTA SA (plugin-sdk)",
+            "includePath": [
+                "${workspaceFolder}/plugins/ArmageddonPlus/src",
+                "${env:PLUGIN_SDK_DIR}/plugin_sa",
+                "${env:PLUGIN_SDK_DIR}/plugin_sa/game_sa",
+                "${env:PLUGIN_SDK_DIR}/plugin_sa/game_sa/enums",
+                "${env:PLUGIN_SDK_DIR}/plugin_sa/game_sa/rw",
+                "${env:PLUGIN_SDK_DIR}/shared",
+                "${env:PLUGIN_SDK_DIR}/shared/game"
+            ],
+            "defines": [
+                "GTASA",
+                "GTAGAME_NAME=\"San Andreas\"",
+                "GTAGAME_ABBR=\"SA\"",
+                "GTAGAME_ABBRLOW=\"sa\"",
+                "GTAGAME_PROTAGONISTNAME=\"CJ\"",
+                "GTAGAME_CITYNAME=\"San Andreas\"",
+                "PLUGIN_SGV_10US",
+                "RW",
+                "_CRT_SECURE_NO_WARNINGS"
+            ],
+            "windowsSdkVersion": "10.0",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "windows-msvc-x86"
+        }
+    ],
+    "version": 4
+}

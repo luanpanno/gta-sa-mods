@@ -1,0 +1,18 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build plugins (Release)",
+            "type": "shell",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/build.ps1",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build + deploy + run game",
+            "type": "shell",
+            "command": "powershell -ExecutionPolicy Bypass -File scripts/run.ps1",
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

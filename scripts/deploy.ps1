@@ -1,7 +1,9 @@
 # Copies built mods from this repo into the modded game's modloader folder.
-# Layout: cleo/*.cs -> modloader/MyCleoMods/   plugins/*/bin/*.asi + config/*.ini -> modloader/<Plugin>/
+# Layout: cleo/*.cs -> modloader/MyCleoMods/   plugins/*/bin/<Configuration>/*.asi + config/*.ini -> modloader/<Plugin>/
 param(
-    [string]$GameDir = "C:\Games\GTA-SA-Modding"
+    [string]$GameDir = "C:\Games\GTA-SA-Modding",
+    [ValidateSet("Release", "Debug")]
+    [string]$Configuration = "Release"
 )
 $ErrorActionPreference = "Stop"
 $repo = Split-Path $PSScriptRoot -Parent
@@ -24,7 +26,7 @@ if ($scripts) {
 
 # C++ plugins
 Get-ChildItem (Join-Path $repo "plugins") -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    $asi = Get-ChildItem $_.FullName -Filter *.asi -Recurse -ErrorAction SilentlyContinue
+    $asi = Get-ChildItem (Join-Path $_.FullName "bin\$Configuration") -Filter *.asi -ErrorAction SilentlyContinue
     if (-not $asi) { return }
     $out = Join-Path $modloader $_.Name
     New-Item -ItemType Directory -Force $out | Out-Null

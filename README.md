@@ -15,8 +15,9 @@ docs/setup.md             Phase 0 setup guide + tool sources/versions
 cleo/                     CLEO script sources (.txt, Sanny Builder) -> compiled .cs
 plugins/ArmageddonPlus/   C++ plugin-sdk project (.asi)
 config/                   .ini files deployed next to the plugin
+scripts/build.ps1         build the C++ plugins (MSBuild, VS 2022 Build Tools)
 scripts/deploy.ps1        copy built mods into the game's modloader folder
-scripts/run.ps1           deploy + launch the game
+scripts/run.ps1           build + deploy + launch the game
 ```
 
 ## Daily loop

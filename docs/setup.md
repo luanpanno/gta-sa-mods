@@ -60,4 +60,19 @@ Installed 2026-10-21:
 | plugin-sdk | GTA SA engine headers and lib | https://github.com/DK22Pac/plugin-sdk (clone to `C:\dev\plugin-sdk`) |
 | VSCode C/C++ extension | IntelliSense | VSCode marketplace (`ms-vscode.cpptools`) |
 
-We'll set up plugin-sdk (build it, environment variable) together at the start of Phase 2, following its wiki.
+## Phase 2: plugin-sdk (done 2026-10-21)
+1. Cloned to `C:\dev\plugin-sdk`: `git clone --depth 1 https://github.com/DK22Pac/plugin-sdk.git` (commit `15f15b6`, Sep 2026).
+2. User environment variable: `PLUGIN_SDK_DIR=C:\dev\plugin-sdk`. Restart VSCode/terminals so they see it.
+3. Generated the projects for **VS 2022**. The SDK's own `.bat` targets VS 2026, which we don't have:
+   ```powershell
+   cd C:\dev\plugin-sdk
+   .\tools\premake\premake5.exe vs2022 --file=tools\premake\premake5.lua
+   ```
+4. Built the San Andreas library, Release and Debug:
+   ```powershell
+   msbuild plugin.sln /p:Configuration=Release /p:Platform="Mixed Platforms" /target:plugin_sa /m
+   msbuild plugin.sln /p:Configuration=zDebug  /p:Platform="Mixed Platforms" /target:plugin_sa /m
+   ```
+   Output: `C:\dev\plugin-sdk\output\lib\Plugin.lib` and `Plugin_d.lib`.
+   (`msbuild` is at `C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe`.)
+5. After updating plugin-sdk (`git pull`), repeat steps 3 and 4.
