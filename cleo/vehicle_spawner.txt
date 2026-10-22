@@ -1,0 +1,172 @@
+// Phase 1.2: Vehicle spawner
+// Sanny Builder 4, mode: GTA SA (v1.0 - SBL)
+//
+//   F7 / F8             : previous / next vehicle
+//   F6                  : spawn it in front of CJ
+//   Shift + F6          : spawn it and put CJ in the driver seat
+
+{$CLEO .cs}
+
+script_name {name} 'vehspwn'
+
+const VEHICLE_COUNT = 12
+
+int selected = 0
+int model = #INFERNUS
+int lastCar = -1
+
+wait {time} 3000
+
+while true
+    wait {time} 0
+
+    if or
+        not is_player_playing $player1
+        not is_player_control_on $player1 // cutscenes, menus, mission intros
+    then
+        continue
+    end
+
+    // --- choose vehicle -----------------------------------------------
+    if
+        is_key_pressed {keyCode} KeyCode.F8 // next
+    then
+        selected += 1
+        if
+            selected >= VEHICLE_COUNT
+        then
+            selected = 0
+        end
+        model = VEHICLE_INFO(selected) // shows the name; Sanny requires storing a function's result
+        while is_key_pressed {keyCode} KeyCode.F8 // wait for release
+            wait {time} 0
+        end
+    end
+
+    if
+        is_key_pressed {keyCode} KeyCode.F7 // previous
+    then
+        selected -= 1
+        if
+            selected < 0
+        then
+            selected = VEHICLE_COUNT
+            selected -= 1
+        end
+        model = VEHICLE_INFO(selected)
+        while is_key_pressed {keyCode} KeyCode.F7
+            wait {time} 0
+        end
+    end
+
+    // --- spawn ------------------------------------------------------------
+    if
+        is_key_pressed {keyCode} KeyCode.F6
+    then
+        model = VEHICLE_INFO(selected)
+        int enterIt = false
+        if
+            is_key_pressed {keyCode} KeyCode.Shift
+        then
+            enterIt = true
+        end
+
+        // let the previous spawn be cleaned up by the game when you drive away
+        if
+            does_vehicle_exist lastCar
+        then
+            mark_car_as_no_longer_needed lastCar
+        end
+
+        lastCar = SPAWN_VEHICLE(model, enterIt)
+        while is_key_pressed {keyCode} KeyCode.F6
+            wait {time} 0
+        end
+    end
+end
+
+terminate_this_custom_script
+
+
+// Loads the model, creates the car in front of CJ facing the same way, returns its handle.
+function SPAWN_VEHICLE(model: int, enterIt: int): int
+    request_model {modelId} model
+    while not has_model_loaded {modelId} model
+        wait {time} 0
+    end
+
+    float x, y, z
+    float side = 0.0
+    if
+        is_char_in_any_car $scplayer
+    then
+        side = 4.0 // already driving: spawn next to you instead of on top of you
+    end
+    x, y, z = get_offset_from_char_in_world_coords $scplayer {offset} side 6.0 0.5
+
+    // note: "car" can't be a variable name in Sanny (it's the Car class), hence spawnedCar
+    int spawnedCar = create_car {modelId} model {pos} x y z
+    float heading = get_char_heading $scplayer
+    set_car_heading spawnedCar {heading} heading
+
+    // make it visible if you're inside an interior (garage, warehouse...)
+    int area = get_area_visible
+    set_vehicle_area_visible spawnedCar {interiorId} area
+
+    mark_model_as_no_longer_needed {modelId} model
+
+    if and
+        enterIt == true
+        not is_char_in_any_car $scplayer
+    then
+        warp_char_into_car $scplayer {vehicle} spawnedCar
+    end
+
+    return spawnedCar
+end
+
+
+// The vehicle list. Returns the model ID for an index and shows its name.
+// To add a vehicle: add a case, bump VEHICLE_COUNT. IDs: https://gtamods.com/wiki/List_of_vehicles_(GTA_SA)
+function VEHICLE_INFO(index: int): int
+    int model
+    switch index
+        case 0
+            model = #INFERNUS
+            print_help_string {text} "Vehicle 1/12: ~y~Infernus"
+        case 1
+            model = #TURISMO
+            print_help_string {text} "Vehicle 2/12: ~y~Turismo"
+        case 2
+            model = #CHEETAH
+            print_help_string {text} "Vehicle 3/12: ~y~Cheetah"
+        case 3
+            model = #BANSHEE
+            print_help_string {text} "Vehicle 4/12: ~y~Banshee"
+        case 4
+            model = #NRG500
+            print_help_string {text} "Vehicle 5/12: ~y~NRG-500"
+        case 5
+            model = #SANCHEZ
+            print_help_string {text} "Vehicle 6/12: ~y~Sanchez"
+        case 6
+            model = #BMX
+            print_help_string {text} "Vehicle 7/12: ~y~BMX"
+        case 7
+            model = #MONSTER
+            print_help_string {text} "Vehicle 8/12: ~y~Monster Truck"
+        case 8
+            model = #RHINO
+            print_help_string {text} "Vehicle 9/12: ~y~Rhino (tank)"
+        case 9
+            model = #MAVERICK
+            print_help_string {text} "Vehicle 10/12: ~y~Maverick (helicopter)"
+        case 10
+            model = #HUNTER
+            print_help_string {text} "Vehicle 11/12: ~y~Hunter (attack helicopter)"
+        default
+            model = #HYDRA
+            print_help_string {text} "Vehicle 12/12: ~y~Hydra (jet)"
+    end
+    return model
+end

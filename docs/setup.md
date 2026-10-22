@@ -1,4 +1,4 @@
-﻿# Phase 0: Environment setup
+# Phase 0: Environment setup
 
 Goal: a separate, modded copy of the game on **v1.0 US** with an ASI loader, CLEO, SilentPatch and Modloader, plus the dev tools.
 
