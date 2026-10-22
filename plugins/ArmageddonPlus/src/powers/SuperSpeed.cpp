@@ -29,10 +29,6 @@ bool IsPathClear(const CVector& a, const CVector& b) {
 
 } // namespace
 
-int SuperSpeed::DefaultKey() const {
-    return VK_F2;
-}
-
 void SuperSpeed::LoadConfig(const Config& config, const char* section) {
     char key[32];
     for (int i = 0; i < kLevels; ++i) {

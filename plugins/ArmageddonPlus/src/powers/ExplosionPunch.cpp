@@ -28,10 +28,6 @@ bool IsMelee(unsigned int weaponType) {
 
 } // namespace
 
-int ExplosionPunch::DefaultKey() const {
-    return VK_F3;
-}
-
 void ExplosionPunch::LoadConfig(const Config& config, const char* section) {
     m_cooldown = config.GetFloat(section, "Cooldown", m_cooldown);
 }

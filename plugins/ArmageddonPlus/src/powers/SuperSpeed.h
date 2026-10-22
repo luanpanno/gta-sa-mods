@@ -18,7 +18,6 @@ public:
 
     const char* Name() const override { return "Super Speed"; }
     const char* Id() const override { return "SuperSpeed"; }
-    int DefaultKey() const override;
     int MaxLevel() const override { return kLevels; }
 
     void LoadConfig(const Config& config, const char* section) override;

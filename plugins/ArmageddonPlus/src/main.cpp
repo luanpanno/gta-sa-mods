@@ -1,9 +1,10 @@
 // ArmageddonPlus: entry point.
-// Wires the core framework (config, input, power manager) to the game's events and registers the powers.
+// Wires the core framework (config, input, power manager, menu) to the game's events and registers the powers.
 
 #include "core/Config.h"
 #include "core/Input.h"
 #include "core/Log.h"
+#include "core/Menu.h"
 #include "core/PowerManager.h"
 #include "powers/ExplosionPunch.h"
 #include "powers/Invulnerability.h"
@@ -12,6 +13,7 @@
 
 #include "plugin.h"
 #include "CFont.h"
+#include "CTimer.h"
 
 #include <memory>
 
@@ -20,6 +22,7 @@ using namespace plugin;
 namespace {
 
 PowerManager g_powers;
+Menu g_menu(g_powers);
 
 void DrawWatermark() {
     CFont::SetOrientation(ALIGN_RIGHT);
@@ -52,14 +55,18 @@ public:
         Config config;
         config.Load(paths::GetPluginDirRelativePathA("ArmageddonPlus.ini"));
         g_powers.LoadConfig(config);
+        g_menu.LoadConfig(config);
 
         Events::gameProcessEvent += [] { // every game frame (logic)
             Input::Update();
+            g_menu.Update(CTimer::ms_fTimeStep / 50.0f); // before powers: it pauses their hotkeys
             g_powers.Update();
         };
         Events::drawHudEvent += [] { // every frame, while the HUD is drawn
             DrawWatermark();
-            g_powers.DrawOverlay();
+            if (!g_menu.IsOpen())
+                g_powers.DrawOverlay(); // the menu already shows every power's state
+            g_menu.Draw();
         };
     }
 } g_armageddonPlus; // global instance: its constructor is our "main"

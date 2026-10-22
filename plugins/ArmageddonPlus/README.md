@@ -18,23 +18,24 @@ Log: `C:\Games\GTA-SA-Modding\ArmageddonPlus.log`.
 - `src/main.cpp`: entry point. A global object whose constructor runs at load time. It registers the powers and subscribes to game events.
 - `src/core/`
   - `Log`: `ArmageddonPlus.log` in the game folder, flushed per line so it survives crashes
-  - `Config`: reads `ArmageddonPlus.ini` (repo: `config/ArmageddonPlus.ini`) and parses key names like `F4`
+  - `Config`: reads `ArmageddonPlus.ini` (repo: `config/ArmageddonPlus.ini`) and parses key names like `F10`
   - `Input`: keyboard sampled once per frame (`IsDown`, `JustPressed`, `JustReleased`)
   - `Power`: base class for every power (Toggle / Hold / OneShot)
-  - `PowerManager`: hotkeys, on/off, per-frame `Update(dt)`, switches everything off on death, debug overlay
+  - `PowerManager`: on/off and levels, optional hotkeys (`Key=` in the ini), per-frame `Update(dt)`, switches everything off on death, top-right power list
+  - `Menu`: **F10** opens the power menu, the main way to use powers. Up/Down selects, Left/Right sets the level (Off/1/2/3), Enter toggles a power or fires a one-shot one, Backspace or F10 closes. While it's open, CJ's controls are disabled with the game's own script command `Command<Commands::SET_PLAYER_CONTROL>` (same as CLEO's `set_player_control`), and any hotkeys are paused. Drawn with `CSprite2d::DrawRect` + `CFont`. New powers show up in it automatically. **Never use F1** for anything: in this game F1 makes it stop reading the keyboard (the mouse still works) until restart. That was the "CJ frozen after the menu" bug.
 - `src/powers/`: one class per power
-  - `SuperSpeed` (F2, 3 levels): after the game moves CJ each frame, push him further the same way (`MultiplierN`), with line-of-sight checks so he never passes through walls. Leg animations are sped up and fatigue is off. **Super jump:** on take-off (was standing, now airborne and going up), his vertical speed is replaced with `JumpN`, and he's collision-proof until he lands, so there's no fall damage.
-  - `ExplosionPunch` (F3, 3 levels): every frame it checks the peds and vehicles near CJ. If something's health dropped, CJ was the last attacker (`m_pLastEntityDamage`) and the weapon was melee, it calls `CExplosion::AddExplosion` at the victim (grenade / rocket / car bomb). CJ is explosion-proof while it's on.
-  - `Invulnerability` (F4, toggle): proof flags on CJ and his current vehicle
-  - `SpawnVehicle` (F11, one-shot): the CLEO spawner ported to engine classes (`CStreaming`, `CModelInfo`, `CAutomobile`...)
+  - `SuperSpeed` (3 levels): after the game moves CJ each frame, push him further the same way (`MultiplierN`), with line-of-sight checks so he never passes through walls. Leg animations are sped up and fatigue is off. **Super jump:** on take-off (was standing, now airborne and going up), his vertical speed is replaced with `JumpN`, and he's collision-proof until he lands, so there's no fall damage.
+  - `ExplosionPunch` (3 levels): every frame it checks the peds and vehicles near CJ. If something's health dropped, CJ was the last attacker (`m_pLastEntityDamage`) and the weapon was melee, it calls `CExplosion::AddExplosion` at the victim (grenade / rocket / car bomb). CJ is explosion-proof while it's on.
+  - `Invulnerability` (on/off): proof flags on CJ and his current vehicle
+  - `SpawnVehicle` (one-shot): the CLEO spawner ported to engine classes (`CStreaming`, `CModelInfo`, `CAutomobile`...)
 
 ## Levels
-A Toggle power that overrides `MaxLevel()` (e.g. `return 3;`) gets levels for free. Each key press steps off -> 1 -> 2 -> 3 -> off, the overlay shows `Super Speed 2/3`, and `OnLevelChanged(player, level)` / `Level()` tell the power which level it's on.
+A Toggle power that overrides `MaxLevel()` (e.g. `return 3;`) gets levels for free. In the menu, Left/Right picks the level; an optional hotkey steps off -> 1 -> 2 -> 3 -> off, the overlay shows `Super Speed 2/3`, and `OnLevelChanged(player, level)` / `Level()` tell the power which level it's on.
 
 ## Adding a power
-1. Create `src/powers/MyPower.h/.cpp`, subclass `Power`, and implement `Name()`, `Id()`, `DefaultKey()` and the hooks you need (`OnActivate`, `Update`, `OnDeactivate`).
+1. Create `src/powers/MyPower.h/.cpp`, subclass `Power`, and implement `Name()`, `Id()` and the hooks you need (`OnActivate`, `Update`, `OnDeactivate`).
 2. Register it in `main.cpp`: `g_powers.Register(std::make_unique<MyPower>());`
-3. Optional: add a `[Power.MyPower]` section with `Key=` and tuning values to `config/ArmageddonPlus.ini`, and read them in `LoadConfig`.
+3. Optional: add a `[Power.MyPower]` section with tuning values (and an optional `Key=`) to `config/ArmageddonPlus.ini`, and read them in `LoadConfig`.
 
 The `.vcxproj` compiles every `src/**/*.cpp` automatically.
 

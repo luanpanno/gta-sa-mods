@@ -20,7 +20,8 @@ public:
     virtual const char* Name() const = 0; // shown on screen, e.g. "Super Speed"
     virtual const char* Id() const = 0;   // ini section is [Power.<Id>], e.g. "SuperSpeed"
     virtual Mode GetMode() const { return Mode::Toggle; }
-    virtual int DefaultKey() const { return 0; } // VK code used if the ini doesn't set Key=
+    // Powers are driven from the menu. A hotkey is optional (Key= in the ini); 0 = none.
+    virtual int DefaultKey() const { return 0; }
     // Toggle powers with MaxLevel() > 1: each key press steps off -> 1 -> 2 -> ... -> MaxLevel -> off.
     virtual int MaxLevel() const { return 1; }
 

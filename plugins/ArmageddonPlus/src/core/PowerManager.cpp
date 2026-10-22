@@ -19,7 +19,7 @@ void PowerManager::Register(std::unique_ptr<Power> power) {
 
 void PowerManager::LoadConfig(const Config& config) {
     m_overlayEnabled = config.GetBool("Debug", "Overlay", true);
-    m_overlayKey = config.GetKey("Debug", "OverlayKey", VK_F12);
+    m_overlayKey = config.GetKey("Debug", "OverlayKey", 0);
 
     char section[64];
     for (auto& power : m_powers) {
@@ -56,13 +56,35 @@ void PowerManager::StepLevel(Power& power, CPlayerPed* player) {
     }
 }
 
+void PowerManager::SetLevel(Power& power, CPlayerPed* player, int level) {
+    if (level < 0)
+        level = 0;
+    if (level > power.MaxLevel())
+        level = power.MaxLevel();
+    if (level == 0) {
+        SetActive(power, player, false);
+        return;
+    }
+    SetActive(power, player, true); // no-op if already on (sets level 1 if it was off)
+    if (power.m_level != level) {
+        power.m_level = level;
+        power.OnLevelChanged(player, level);
+        Log::Info("%s level %d", power.Id(), level);
+    }
+}
+
+void PowerManager::Fire(Power& power, CPlayerPed* player) {
+    power.OnActivate(player);
+    Log::Info("%s fired", power.Id());
+}
+
 void PowerManager::DeactivateAll(CPlayerPed* player) {
     for (auto& power : m_powers)
         SetActive(*power, player, false);
 }
 
 void PowerManager::Update() {
-    if (Input::JustPressed(m_overlayKey))
+    if (m_hotkeysEnabled && Input::JustPressed(m_overlayKey))
         m_overlayEnabled = !m_overlayEnabled;
 
     CPlayerPed* player = FindPlayerPed();
@@ -79,20 +101,20 @@ void PowerManager::Update() {
     float dt = CTimer::ms_fTimeStep / 50.0f;
 
     for (auto& power : m_powers) {
-        int key = power->m_key;
+        // hotkeys are paused while the menu is open (it uses the keyboard), but powers keep running
+        int key = m_hotkeysEnabled ? power->m_key : 0;
         switch (power->GetMode()) {
         case Power::Mode::Toggle:
             if (Input::JustPressed(key))
                 StepLevel(*power, player);
             break;
         case Power::Mode::Hold:
-            SetActive(*power, player, Input::IsDown(key));
+            if (m_hotkeysEnabled)
+                SetActive(*power, player, Input::IsDown(key));
             break;
         case Power::Mode::OneShot:
-            if (Input::JustPressed(key)) {
-                power->OnActivate(player);
-                Log::Info("%s fired", power->Id());
-            }
+            if (Input::JustPressed(key))
+                Fire(*power, player);
             break;
         }
         if (power->m_active)
@@ -117,11 +139,13 @@ void PowerManager::DrawOverlay() {
         CFont::SetDropColor(CRGBA(0, 0, 0, 255));
         CFont::SetColor(power->m_active ? CRGBA(120, 255, 120, 255) : CRGBA(200, 200, 200, 200));
 
+        char key[24] = "";
+        if (power->m_key) // only powers with an optional hotkey (Key= in the ini) show it
+            std::snprintf(key, sizeof(key), "[%s] ", Config::KeyName(power->m_key));
         if (power->MaxLevel() > 1 && power->m_active)
-            std::snprintf(line, sizeof(line), "[%s] %s %d/%d", Config::KeyName(power->m_key), power->Name(),
-                          power->m_level, power->MaxLevel());
+            std::snprintf(line, sizeof(line), "%s%s %d/%d", key, power->Name(), power->m_level, power->MaxLevel());
         else
-            std::snprintf(line, sizeof(line), "[%s] %s", Config::KeyName(power->m_key), power->Name());
+            std::snprintf(line, sizeof(line), "%s%s", key, power->Name());
         CFont::PrintString(SCREEN_COORD_RIGHT(20.0f), y, line);
         y += SCREEN_COORD(16.0f);
     }

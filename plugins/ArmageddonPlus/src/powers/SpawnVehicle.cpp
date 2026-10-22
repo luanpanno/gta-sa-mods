@@ -88,10 +88,6 @@ CVehicle* CreateVehicle(int modelIndex, CVector position, float heading) {
 
 } // namespace
 
-int SpawnVehicle::DefaultKey() const {
-    return VK_F11;
-}
-
 void SpawnVehicle::LoadConfig(const Config& config, const char* section) {
     m_model = config.GetInt(section, "Model", 411);
 }

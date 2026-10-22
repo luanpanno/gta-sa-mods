@@ -9,7 +9,6 @@ public:
     const char* Name() const override { return "Spawn Vehicle"; }
     const char* Id() const override { return "SpawnVehicle"; }
     Mode GetMode() const override { return Mode::OneShot; }
-    int DefaultKey() const override;
 
     void LoadConfig(const Config& config, const char* section) override;
     void OnActivate(CPlayerPed* player) override;
