@@ -1,64 +1,97 @@
 # ArmageddonPlus (C++ / plugin-sdk)
 
-An `.asi` plugin: a Windows DLL with a different extension. The ASI loader (bundled with CLEO) loads it into `gta_sa.exe` at startup. From then on our code runs inside the game process and can call engine functions and read and write engine objects directly, through plugin-sdk's headers.
+The superpowers plugin. How to *use* the powers: [docs/powers.md](../../docs/powers.md). This page is about how the plugin works and how to extend it.
+
+An `.asi` is a Windows DLL with a different extension. The ASI loader (bundled with CLEO) loads it into `gta_sa.exe` at startup. From then on, our code runs **inside the game process**: it can call engine functions and read and write engine objects directly, through [plugin-sdk](https://github.com/DK22Pac/plugin-sdk)'s headers.
 
 ## Build and run
 ```powershell
-.\scripts\run.ps1                 # build Release + deploy + start the game
-.\scripts\build.ps1               # build only
-.\scripts\build.ps1 -Configuration Debug
+.\scripts\run.ps1                          # build Release + deploy + start the game
+.\scripts\build.ps1                        # build only
+.\scripts\build.ps1 -Configuration Debug   # with symbols (links Plugin_d.lib)
 ```
-In VSCode: **Ctrl+Shift+B** builds. *Terminal -> Run Task -> "Build + deploy + run game"* does everything.
-Close the game before building: Windows locks a loaded `.asi`.
+- VSCode: **Ctrl+Shift+B** builds. *Terminal → Run Task → "Build + deploy + run game"* does everything.
+- Output: `bin\Release\ArmageddonPlus.asi` is deployed to `C:\Games\GTA-SA-Modding\modloader\ArmageddonPlus\`, together with `config\ArmageddonPlus.ini`.
+- Log: `C:\Games\GTA-SA-Modding\ArmageddonPlus.log`.
+- Close the game before building: Windows locks a loaded `.asi`.
 
-Output: `bin\Release\ArmageddonPlus.asi` is deployed to `C:\Games\GTA-SA-Modding\modloader\ArmageddonPlus\`.
-Log: `C:\Games\GTA-SA-Modding\ArmageddonPlus.log`.
+The project ([ArmageddonPlus.vcxproj](ArmageddonPlus.vcxproj)) mirrors the settings of plugin-sdk's generated examples: Win32, v143, C++latest, static runtime, `PLUGIN_SGV_10US`. It compiles every `src/**/*.cpp`, so new files need no project edits.
 
-## Layout
-- `src/main.cpp`: entry point. A global object whose constructor runs at load time. It registers the powers and subscribes to game events.
-- `src/core/`
-  - `Log`: `ArmageddonPlus.log` in the game folder, flushed per line so it survives crashes
-  - `Config`: reads `ArmageddonPlus.ini` (repo: `config/ArmageddonPlus.ini`) and parses key names like `F10`
-  - `Input`: keyboard sampled once per frame (`IsDown`, `JustPressed`, `JustReleased`)
-  - `Power`: base class for every power (Toggle / Hold / OneShot)
-  - `PowerManager`: on/off and levels, optional hotkeys (`Key=` in the ini), per-frame `Update(dt)`, switches everything off on death, top-right power list
-  - `Menu`: **F10** opens the power menu, the main way to use powers. Up/Down selects, Left/Right sets the level (Off/1/2/3), Enter toggles a power or fires a one-shot one, Backspace or F10 closes. While it's open, CJ's controls are disabled with the game's own script command `Command<Commands::SET_PLAYER_CONTROL>` (same as CLEO's `set_player_control`), and any hotkeys are paused. Drawn with `CSprite2d::DrawRect` + `CFont`. New powers show up in it automatically. **Never use F1** for anything: in this game F1 makes it stop reading the keyboard (the mouse still works) until restart. That was the "CJ frozen after the menu" bug.
-- `src/powers/`: one class per power
-  - `Flight` (3 levels): W/S flies where the camera looks, A/D strafes, SPACE/C go up/down, no keys = hover. Gravity is off (`bApplyGravity`), and every frame CJ's `m_vecMoveSpeed` is set toward the key direction (eased). The game's physics then moves him **with collisions**, so he can't pass through walls. He's collision-proof while flying and until he touches the ground again (`UpdateAlways` = per-frame hook that also runs while the power is off). Super Speed stands down while flying. **Poses:** the game has no flying animations, so it borrows two: `FALL_SkyDive_Accel` (PARACHUTE file, head-first dive) while moving and `Swim_Tread` (PED file) while hovering. They're played with `Command<Commands::TASK_PLAY_ANIM_NON_INTERRUPTABLE>`, the same thing as CLEO's task_play_anim, and restarted if the game interrupts them. Both are configurable in the ini.
-  - `SuperSpeed` (3 levels): after the game moves CJ each frame, push him further the same way (`MultiplierN`), with line-of-sight checks so he never passes through walls. Leg animations are sped up and fatigue is off. **Super jump:** on take-off (was standing, now airborne and going up), his vertical speed is replaced with `JumpN`, and he's collision-proof until he lands, so there's no fall damage.
-  - `ExplosionPunch` (3 levels): every frame it checks the peds and vehicles near CJ. If something's health dropped, CJ was the last attacker (`m_pLastEntityDamage`) and the weapon was melee, it calls `CExplosion::AddExplosion` at the victim (grenade / rocket / car bomb). CJ is explosion-proof while it's on.
-  - `Telekinesis` (3 levels, "mouse" group): CJ draws a Desert Eagle that can't fire, which gives a real crosshair. RMB + LMB grabs whatever is under the crosshair: the ray comes from `CCamera::Find3rdPersonCamTargetVector` (the aim crosshair is off-center) and `CWorld::ProcessLineOfSight` (`pIgnoreEntity` = CJ). Holding LMB carries it: gravity off and a velocity toward a point along the aim, so physics moves it with collisions. Releasing throws it. The weapon CJ had in the pistol slot is saved and restored afterwards. The held pointer is re-checked against its pool every frame.
-  - `Force` (3 levels, "mouse" group): LMB push / RMB pull. Every ped/vehicle/object in a cone in front gets a velocity away from or toward CJ, plus lift. Things are woken with `SetIsStatic(false)` first, because parked cars sleep. Shooting is disabled while it's on (`CPad::bDisablePlayerFireWeapon`).
-  - `BulletTime` (3 levels): `CTimer::ms_fTimeScale` = 0.6 / 0.35 / 0.15 slows the whole game. To keep CJ at normal speed, every animation on him (walked with `RpAnimBlendClumpGetFirstAssociation` / `GetNextAssociation`) runs `1/scale` faster. Peds move by their animations, so his walking, running and fighting are back to real time. Each anim's own speed is remembered, so this works on top of Super Speed. A blue screen tint comes from the new `Power::Draw()` hook. Flight divides its velocity by the time scale, so flying stays real-time too.
-  - `LightningStrike` (3 levels, "mouse" group): LMB fires a camera ray and puts `CExplosion::AddExplosion` at the hit point (level 3 also lights a fire). The bolt is drawn by hand: jagged world points from 90 m up down to the target, projected with `CSprite::CalcScreenCoors` and drawn as quads (`CSprite2d::Draw2DPolygon`) in two passes (blue glow, white core), plus a white screen flash and a center crosshair. Timing uses `GetTickCount64`, so Bullet Time doesn't slow the bolt.
-  - `FireTrail` (3 levels): every `Spacing` meters CJ moves on the ground (or behind his car), `gFireManager.StartFire` lights a flame with CJ as creator. CJ and his current car are fireproof while it's on. No flames while airborne.
-  - `Invulnerability` (on/off): proof flags on CJ and his current vehicle
-  - `SpawnVehicle` (one-shot): the CLEO spawner ported to engine classes (`CStreaming`, `CModelInfo`, `CAutomobile`...)
+## Architecture
+```
+main.cpp        global object whose constructor runs at load time ("main"):
+                registers the powers, loads the ini, hooks Events::gameProcessEvent / drawHudEvent
+core/
+  Log           ArmageddonPlus.log, flushed per line (survives crashes)
+  Config        reads the ini; key names ("F10", "NUMPAD5", "SHIFT") -> virtual-key codes
+  Input         keyboard/mouse sampled once per frame: IsDown / JustPressed / JustReleased
+  Power         base class of every power
+  PowerManager  owns the powers: on/off, levels, exclusive groups, optional hotkeys,
+                per-frame updates, switch-off on death, top-right power list
+  Menu          F10 power menu (arrows / Enter / Backspace)
+powers/         one class per power
+```
 
-## Levels
-A Toggle power that overrides `MaxLevel()` (e.g. `return 3;`) gets levels for free. In the menu, Left/Right picks the level; an optional hotkey steps off -> 1 -> 2 -> 3 -> off, the overlay shows `Super Speed 2/3`, and `OnLevelChanged(player, level)` / `Level()` tell the power which level it's on.
+Every game frame (`gameProcessEvent`, after the game has processed the world):
+1. `Input::Update()`
+2. `Menu::Update(dt)`, before the powers, because it pauses the hotkeys while open
+3. `PowerManager::Update()`: hotkeys, then `Update()` on active powers and `UpdateAlways()` on all of them
 
-## Exclusive groups
-Powers that return the same `ExclusiveGroup()` string can't be on together. Turning one on switches the others off. `"mouse"` = Telekinesis and Force, because both take over the mouse buttons.
+Every frame while the HUD draws (`drawHudEvent`): the powers' `Draw()` (screen effects), the watermark, the power list (hidden while the menu is open), then the menu.
 
-## Adding a power
-1. Create `src/powers/MyPower.h/.cpp`, subclass `Power`, and implement `Name()`, `Id()` and the hooks you need (`OnActivate`, `Update`, `OnDeactivate`).
-2. Register it in `main.cpp`: `g_powers.Register(std::make_unique<MyPower>());`
-3. Optional: add a `[Power.MyPower]` section with tuning values (and an optional `Key=`) to `config/ArmageddonPlus.ini`, and read them in `LoadConfig`.
+## The `Power` class
+| Override | Purpose |
+|---|---|
+| `Name()`, `Id()` | Menu label; ini section `[Power.<Id>]` |
+| `GetMode()` | `Toggle` (default), `Hold` (active while a key is held; needs `Key=`), `OneShot` (fires once) |
+| `MaxLevel()` | > 1 gives levels: the menu's ←/→ pick Off/1/2/3; `Level()` returns the current one |
+| `ExclusiveGroup()` | Powers with the same group string can't be on together (`"mouse"`: Telekinesis, Force, Lightning Strike) |
+| `LoadConfig(config, section)` | Read tuning values once at startup |
+| `OnActivate` / `OnDeactivate` | Turned on / off (also off when CJ dies). OneShot: `OnActivate` = fire |
+| `OnLevelChanged(player, level)` | After activation and on every level change |
+| `Update(player, dt)` | Every frame while on. `dt` = game seconds (slowed by Bullet Time) |
+| `UpdateAlways(player, dt)` | Every frame, on or off. For clean-up after switching off, e.g. Flight's landing protection |
+| `Draw()` | HUD/screen drawing while on, e.g. Bullet Time's tint, Lightning's bolt and crosshair |
 
-The `.vcxproj` compiles every `src/**/*.cpp` automatically.
+### Adding a power
+1. Create `src/powers/MyPower.h/.cpp`, subclass `Power`, and implement `Name()`, `Id()` and the hooks you need.
+2. Register it in `main.cpp`: `g_powers.Register(std::make_unique<MyPower>());`. Registration order = menu order.
+3. Add a `[Power.MyPower]` section with tuning values to `config/ArmageddonPlus.ini` and read them in `LoadConfig`.
 
-## Concepts (vs CLEO)
+It shows up in the menu automatically.
+
+### Rules of thumb (learned the hard way)
+- **Re-apply state every frame** (proof flags, gravity, time scale...). The game resets things after deaths, cutscenes and menus.
+- **Save and restore** whatever you change (`m_wasFireProof`, saved weapons...), so turning a power off leaves CJ as he was.
+- **Never keep a raw pointer to a game entity without re-checking it.** The game deletes peds, cars and objects at any time. Check with `CPools::ms_pVehiclePool->IsObjectValid(ptr)` (and the ped/object pools) every frame.
+- **Physics units:** `m_vecMoveSpeed` is meters per *time step* (1/50 s), so `velocity_m_s / 50`. Under Bullet Time, steps shrink by `CTimer::ms_fTimeScale`.
+- **Parked cars and placed objects are asleep** (`bIsStatic`). Call `SetIsStatic(false)` before pushing them.
+- **Script commands are available from C++:** `Command<Commands::SET_PLAYER_CONTROL>(0, false)` runs the same code as the CLEO opcode. That's safer than poking flags whose meaning you don't fully know.
+- **Never use F1** as a key: it makes GTA SA stop reading the keyboard.
+
+## How each power works
+| Power | Technique |
+|---|---|
+| `Flight` | Gravity off (`bApplyGravity`). Every frame, `m_vecMoveSpeed` eases toward the key direction (camera-relative), and the game's physics moves CJ **with collisions**. Collision-proof until he lands (`UpdateAlways`). Poses: `FALL_SkyDive_Accel` (PARACHUTE) while moving and `Swim_Tread` (PED) while hovering, via `TASK_PLAY_ANIM_NON_INTERRUPTABLE`, restarted if interrupted. |
+| `SuperSpeed` | After the game moves CJ, push him further the same way (`MultiplierN`), with two line-of-sight checks (waist and knee) so he never enters walls. Leg anims sped up, fatigue off. Super jump: on take-off (was standing, now airborne going up), the vertical speed is replaced with `JumpN`, collision-proof until landing. |
+| `ExplosionPunch` | Tracks the health of nearby peds and vehicles. A drop + `m_pLastEntityDamage == CJ` + melee weapon = a punch → `CExplosion::AddExplosion` at the victim. |
+| `Telekinesis` | Gives a non-firing Desert Eagle for the crosshair (the previous slot weapon is saved and restored). The ray comes from `CCamera::Find3rdPersonCamTargetVector` + `CWorld::ProcessLineOfSight` (`pIgnoreEntity` = CJ). The held entity gets gravity off and a velocity toward a point along the aim. Releasing throws it. |
+| `Force` | Everything in a ~140° cone within the radius gets a velocity away from or toward CJ, plus lift. Peds are lifted 0.3 m first so physics moves them, not their walk animation. |
+| `LightningStrike` | Camera ray → explosion at the hit point. The bolt: jagged 3D points projected with `CSprite::CalcScreenCoors`, drawn as quads (`CSprite2d::Draw2DPolygon`), glow + core, plus a screen flash. Timed with `GetTickCount64` so Bullet Time doesn't slow it. |
+| `FireTrail` | `gFireManager.StartFire` every `Spacing` meters at CJ's feet, or behind his car. CJ and the car are fireproof. |
+| `BulletTime` | `CTimer::ms_fTimeScale` slows the game. Every animation on CJ runs `1/scale` faster, and since peds move by their animations, he stays real-time. Each anim's own speed is remembered, so it stacks with Super Speed. |
+| `Invulnerability` | All proof flags on CJ and his current vehicle, and health kept full. |
+| `SpawnVehicle` | `CStreaming::RequestModel` → the right vehicle class for the model type → `Teleport` (adds it to the world). Adapted from plugin-sdk's `CreateCar` example. |
+
+## plugin-sdk vs CLEO
 | CLEO | plugin-sdk |
 |---|---|
 | `while true / wait 0` loop | `Events::gameProcessEvent += fn`: the game calls you every frame |
 | `display_text_formatted` each frame | `Events::drawHudEvent += fn` with `CFont::PrintString` |
 | `$scplayer` (a handle) | `FindPlayerPed()` returns a `CPlayerPed*`: the real engine object |
 | `get_char_coordinates` | `ped->GetPosition()`. Fields like `m_fHealth` and `m_vecMoveSpeed` are readable/writable directly |
-| opcodes | Engine classes in `C:\dev\plugin-sdk\plugin_sa\game_sa\*.h` (CPed, CVehicle, CWorld, CExplosion, CTimer...) |
+| opcodes | Engine classes in `C:\dev\plugin-sdk\plugin_sa\game_sa\*.h` (CPed, CVehicle, CWorld, CExplosion, CTimer...), or `Command<Commands::...>` |
 
-**Header names win over examples.** Some plugin-sdk examples are out of date: `m_fCurrentRotation` is now `m_fHeadingCurrent`, proof flags are plain `bBulletProof` members of `CPhysical`, and so on. When something doesn't compile, search `C:\dev\plugin-sdk\plugin_sa\game_sa\*.h`.
-
-**Careful:** you're inside the game process. A null pointer or a bad write crashes the game instantly, with no error message. Check pointers (`if (!player) return;`) and watch the log.
-
-Screen coordinates: `SCREEN_COORD(x)` scales a 640x448-style value to the real resolution. `SCREEN_COORD_RIGHT(x)` measures from the right edge.
+- **Headers win over examples.** Some plugin-sdk examples are out of date: `m_fCurrentRotation` is now `m_fHeadingCurrent`, proof flags are plain `bBulletProof` members of `CPhysical`, and so on. When something doesn't compile, search `C:\dev\plugin-sdk\plugin_sa\game_sa\*.h`.
+- **You're inside the game process.** A null pointer or a bad write crashes the game instantly, with no error message. Check pointers and watch the log.
+- **Screen coordinates:** `SCREEN_COORD(x)` scales a 640×448-style value to the real resolution. `SCREEN_COORD_RIGHT(x)` measures from the right edge.

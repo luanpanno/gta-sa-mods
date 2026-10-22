@@ -1,36 +1,147 @@
 # gta-sa-mods
 
-Incremental GTA: San Andreas mods, from small CLEO scripts up to a C++ "Armageddon+" superpowers plugin.
+Mods for **Grand Theft Auto: San Andreas** (PC), built step by step: from small CLEO scripts up to **ArmageddonPlus**, a C++ plugin that gives CJ superpowers. It's inspired by the old *GTA SA Armageddon* mod: flight, super speed, telekinesis, lightning, bullet time and more, all controlled from an in-game menu.
 
-## Folders
-| Path | What |
-|---|---|
-| `C:\Program Files (x86)\Steam\...\Grand Theft Auto San Andreas` | Steam install. **Never modified.** |
-| `C:\Games\GTA-SA-Modding` | Modded copy, downgraded to v1.0 US. Launch `gta_sa.exe` from here, **not via Steam**. |
-| `C:\dev\gta-sa-mods` | This repo (source only, no game files). |
+> **Single-player only, no ban risk.** GTA SA has no online mode and no anti-cheat. All modding happens in a separate copy of the game (`C:\Games\GTA-SA-Modding`); the Steam install is never touched, and Steam's "Verify integrity of game files" can always restore it.
 
-## Repo layout
-```
-docs/setup.md             Phase 0 setup guide + tool sources/versions
-cleo/                     CLEO script sources (.txt, Sanny Builder) -> compiled .cs
-plugins/ArmageddonPlus/   C++ plugin-sdk project (.asi)
-config/                   .ini files deployed next to the plugin
-scripts/build.ps1         build the C++ plugins (MSBuild, VS 2022 Build Tools)
-scripts/deploy.ps1        copy built mods into the game's modloader folder
-scripts/run.ps1           build + deploy + launch the game
-```
+## Contents
+- [What's included](#whats-included)
+- [Requirements](#requirements)
+- [Getting started](#getting-started)
+- [Day-to-day workflow](#day-to-day-workflow)
+- [Project structure](#project-structure)
+- [Configuration](#configuration)
+- [Roadmap](#roadmap)
+- [Documentation](#documentation)
+- [Credits](#credits)
 
-## Daily loop
+## What's included
+
+### ArmageddonPlus: superpowers (C++ plugin)
+Press **F10** in game to open the power menu: **↑/↓** select, **←/→** set the level, **Enter** toggles, **Backspace** closes. Full controls and tips: [docs/powers.md](docs/powers.md).
+
+| Power | Levels | What it does | How to use it once it's on |
+|---|---|---|---|
+| Flight | 3 | Superman-style flight with dive / hover poses | W/S toward/away from the camera, A/D strafe, Space/C up/down |
+| Super Speed | 3 | Run 2.5x / 4.5x / 8x faster, plus super jumps | Run and jump normally |
+| Explosion Punch | 3 | Melee hits make the victim explode (cars too) | Punch / hit with a melee weapon |
+| Telekinesis | 3 | Grab, carry and throw cars, people and objects | Aim (RMB) + click (LMB), hold to carry, release to throw |
+| Force Push / Pull | 3 | Shockwave away from or toward CJ | LMB push, RMB pull |
+| Lightning Strike | 3 | Call down a lightning bolt that blows up the target | Point the center crosshair, LMB |
+| Fire Trail | 3 | Leaves a trail of fire on foot or behind his car | Just move |
+| Bullet Time | 3 | World slows to 60% / 35% / 15%, CJ stays fast | Automatic while on |
+| Invulnerability | on/off | CJ and his current car can't be damaged | Automatic while on |
+| Spawn Vehicle | one-shot | Spawns a vehicle in front of CJ (Infernus by default) | Enter in the menu |
+
+Telekinesis, Force and Lightning Strike all use the mouse buttons, so only one of them can be on at a time.
+
+### CLEO scripts (learning projects)
+| Script | Key | What it does |
+|---|---|---|
+| `hello` | F5 | Help box with a press counter |
+| `vehicle_spawner` | F7/F8 choose, F6 spawn, Shift+F6 spawn and enter | 12 vehicles, from the Infernus to the Hydra |
+| `console` | F9 | Command console: `car infernus`, `weapon minigun`, `money 1000000`, `wanted 0`, `health`, `fix`, `time 12`, `weather 8`, `tp marker`, `save home` / `tp home`, toggles `god` / `ammo` / `cops` / `stamina` |
+
+Details: [cleo/README.md](cleo/README.md).
+
+## Requirements
+| What | Version used | Why |
+|---|---|---|
+| GTA San Andreas (Steam) | Steam build, **downgraded to 1.0 US** in a copy | Almost every mod and tool needs the original 1.0 US `gta_sa.exe` |
+| CLEO 5 (+ Ultimate ASI Loader) | 5.4.0 | Runs `.cs` scripts and loads `.asi` plugins |
+| SilentPatch | 1.1 build 34.1 | Bug fixes and modern Windows compatibility |
+| Modloader | 0.3.10 | Mods live in their own folders; the game files stay clean |
+| Sanny Builder | 4.2.0 | Compiles CLEO scripts |
+| Visual Studio 2022 Build Tools | 17.14 (MSVC 14.44) | C++ compiler (x86) |
+| plugin-sdk | commit `15f15b6` | GTA SA engine headers and library |
+| Windows | 10/11 | |
+
+## Getting started
+The full setup, with download links and checks for each step, is in **[docs/setup.md](docs/setup.md)**. In short:
+
+1. **Copy** the Steam game folder to `C:\Games\GTA-SA-Modding`.
+2. **Downgrade** that copy to v1.0 US. `gta_sa.exe` must be 14,383,616 bytes.
+3. **Install** CLEO 5, SilentPatch and Modloader into the copy. Launch it once: the CLEO version shows in the main menu.
+4. **Back up** the clean modded copy (`C:\Games\GTA-SA-Modding-clean.zip`).
+5. **Install the dev tools**: Sanny Builder, VS 2022 Build Tools with the C++ workload, and plugin-sdk (cloned to `C:\dev\plugin-sdk`, built, with `PLUGIN_SDK_DIR` set).
+6. **Clone this repo** to `C:\dev\gta-sa-mods` and run:
+   ```powershell
+   .\scripts\run.ps1
+   ```
+
+## Day-to-day workflow
 ```powershell
-.\scripts\run.ps1          # deploy everything and launch the game
-.\scripts\deploy.ps1       # deploy only
+.\scripts\run.ps1                    # build the C++ plugin, deploy everything, start the game
+.\scripts\run.ps1 -NoBuild           # deploy + start (e.g. after compiling only CLEO scripts)
+.\scripts\build.ps1                  # build only (Release)
+.\scripts\build.ps1 -Configuration Debug
+.\scripts\deploy.ps1                 # copy built mods + config into the game
 ```
-Each mod is deployed to `C:\Games\GTA-SA-Modding\modloader\<ModName>\`. To disable one, rename its folder to start with `.` or delete it.
+- **C++:** edit `plugins/ArmageddonPlus/src/...`, then run `run.ps1`. In VSCode, **Ctrl+Shift+B** builds.
+- **CLEO:** edit `cleo/*.txt` in Sanny Builder, press **F6** to compile, then run `run.ps1 -NoBuild`.
+- **Settings:** edit `config/ArmageddonPlus.ini`, then `deploy.ps1` and restart the game.
+- **Close the game before building or deploying.** Windows locks a loaded `.asi`, and `run.ps1` refuses to start while the game is running.
+
+Everything is deployed under `C:\Games\GTA-SA-Modding\modloader\`:
+- `ArmageddonPlus\`: `ArmageddonPlus.asi` and `ArmageddonPlus.ini`
+- `MyCleoMods\`: the compiled `.cs` scripts
+
+To disable a mod, delete its folder or rename it to start with `.`.
+
+Logs, when something goes wrong: `ArmageddonPlus.log`, `cleo.log` and `modloader\modloader.log` in the game folder. See [docs/troubleshooting.md](docs/troubleshooting.md).
+
+## Project structure
+```
+gta-sa-mods/
+├── cleo/                        CLEO scripts (Sanny Builder .txt sources; compiled .cs are git-ignored)
+├── config/
+│   └── ArmageddonPlus.ini       power settings (levels, speeds, keys); deployed next to the .asi
+├── docs/
+│   ├── setup.md                 environment setup, from a clean PC to a working modded game
+│   ├── powers.md                player guide: every power, controls, tips
+│   └── troubleshooting.md       known problems and fixes
+├── plugins/ArmageddonPlus/      C++ plugin (plugin-sdk)
+│   ├── ArmageddonPlus.vcxproj   MSBuild project (compiles every src/**/*.cpp)
+│   └── src/
+│       ├── main.cpp             entry point: registers powers, hooks game events
+│       ├── core/                Config, Input, Log, Power, PowerManager, Menu
+│       └── powers/              one class per power
+├── scripts/                     build.ps1, deploy.ps1, run.ps1
+└── .vscode/                     build tasks + IntelliSense paths for plugin-sdk
+```
+How the plugin is built, and how to add a power: [plugins/ArmageddonPlus/README.md](plugins/ArmageddonPlus/README.md).
+
+## Configuration
+All power tuning lives in [config/ArmageddonPlus.ini](config/ArmageddonPlus.ini). It has one `[Power.<Name>]` section per power, with per-level values like `Speed1..3`, `Multiplier1..3` and `ThrowSpeed1..3`. Every key has a comment.
+
+- **Menu key:** `[Menu] Key=F10`. **Never use F1:** it makes GTA SA stop reading the keyboard.
+- **Optional hotkeys:** add `Key=<key>` to a power's section, e.g. `Key=NUMPAD1`. A toggle hotkey steps off → 1 → 2 → 3 → off.
+- **Top-right power list:** `[Debug] Overlay=1`, also switchable in the menu.
 
 ## Roadmap
-- **Phase 0:** environment (see [docs/setup.md](docs/setup.md))
-- **Phase 1:** CLEO mods: hello world, vehicle spawner, spawn console, QoL toggles
-- **Phase 2:** C++ plugin foundation: hello `.asi`, spawn console port, PowerManager/Input/Config
-- **Phase 3:** powers: super speed, super jump, explosion punch, flight, telekinesis, bullet time, extras
-- **Phase 4:** power UX: selection menu, energy/cooldown (toggleable), effects and sounds
-- **Phase 5:** physics/world: gravity, handling, chaos modes, NPC reactions
+- [x] **Phase 0: Environment.** Game copy, 1.0 US downgrade, CLEO / SilentPatch / Modloader, dev tools.
+- [x] **Phase 1: CLEO.** Hello world, vehicle spawner, command console, quality-of-life toggles.
+- [x] **Phase 2: C++ foundation.** plugin-sdk, hello `.asi`, power framework (config, input, levels, overlay).
+- [x] **Phase 3: Powers.** Super speed + jump, explosion punch, flight, telekinesis, force push/pull, bullet time, lightning strike, fire trail.
+- [ ] **Phase 4: Power UX.**
+  - [x] In-game power menu
+  - [ ] Energy bar and cooldowns (switchable in the menu)
+  - [ ] Visual effects and sounds
+- [ ] **Phase 5: Physics and world.** Gravity changes, car handling, chaos modes, NPC and police reactions.
+
+## Documentation
+| Doc | For |
+|---|---|
+| [docs/setup.md](docs/setup.md) | Setting up a PC from scratch |
+| [docs/powers.md](docs/powers.md) | Playing: what each power does and how to control it |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Things that went wrong before, and their fixes |
+| [plugins/ArmageddonPlus/README.md](plugins/ArmageddonPlus/README.md) | C++ plugin internals, adding a power, plugin-sdk tips |
+| [cleo/README.md](cleo/README.md) | CLEO scripts, Sanny Builder workflow, CLEO cheat sheet |
+
+## Credits
+- [plugin-sdk](https://github.com/DK22Pac/plugin-sdk) (DK22Pac and the GTA community). `SpawnVehicle` adapts its `CreateCar` example.
+- [CLEO 5](https://github.com/cleolibrary/CLEO5) (cleolibrary), [Sanny Builder](https://github.com/sannybuilder/dev) (Seemann and contributors).
+- [SilentPatch](https://github.com/CookiePLMonster/SilentPatch) (Silent / CookiePLMonster), [Modloader](https://github.com/thelink2012/modloader) (LINK/2012), [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader) (ThirteenAG).
+- Inspired by the *GTA San Andreas Armageddon* mod.
+
+Grand Theft Auto: San Andreas is © Rockstar Games. This repository only contains original source code and configuration, **no game files**. You need your own legal copy of the game.
