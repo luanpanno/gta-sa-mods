@@ -24,6 +24,7 @@ Log: `C:\Games\GTA-SA-Modding\ArmageddonPlus.log`.
   - `PowerManager`: hotkeys, on/off, per-frame `Update(dt)`, switches everything off on death, debug overlay
 - `src/powers/`: one class per power
   - `SuperSpeed` (F2, 3 levels): after the game moves CJ each frame, push him further the same way (`MultiplierN`), with line-of-sight checks so he never passes through walls. Leg animations are sped up and fatigue is off. **Super jump:** on take-off (was standing, now airborne and going up), his vertical speed is replaced with `JumpN`, and he's collision-proof until he lands, so there's no fall damage.
+  - `ExplosionPunch` (F3, 3 levels): every frame it checks the peds and vehicles near CJ. If something's health dropped, CJ was the last attacker (`m_pLastEntityDamage`) and the weapon was melee, it calls `CExplosion::AddExplosion` at the victim (grenade / rocket / car bomb). CJ is explosion-proof while it's on.
   - `Invulnerability` (F4, toggle): proof flags on CJ and his current vehicle
   - `SpawnVehicle` (F11, one-shot): the CLEO spawner ported to engine classes (`CStreaming`, `CModelInfo`, `CAutomobile`...)
 
