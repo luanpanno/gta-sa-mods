@@ -8,9 +8,11 @@
 #include "core/PowerManager.h"
 #include "powers/ExplosionPunch.h"
 #include "powers/Flight.h"
+#include "powers/Force.h"
 #include "powers/Invulnerability.h"
 #include "powers/SpawnVehicle.h"
 #include "powers/SuperSpeed.h"
+#include "powers/Telekinesis.h"
 
 #include "plugin.h"
 #include "CFont.h"
@@ -51,6 +53,8 @@ public:
         g_powers.Register(std::make_unique<Flight>());
         g_powers.Register(std::make_unique<SuperSpeed>());
         g_powers.Register(std::make_unique<ExplosionPunch>());
+        g_powers.Register(std::make_unique<Telekinesis>());
+        g_powers.Register(std::make_unique<Force>());
         g_powers.Register(std::make_unique<Invulnerability>());
         g_powers.Register(std::make_unique<SpawnVehicle>());
 

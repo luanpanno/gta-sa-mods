@@ -24,6 +24,9 @@ public:
     virtual int DefaultKey() const { return 0; }
     // Toggle powers with MaxLevel() > 1: each key press steps off -> 1 -> 2 -> ... -> MaxLevel -> off.
     virtual int MaxLevel() const { return 1; }
+    // Powers sharing a group can't be on together: turning one on turns the others off
+    // (e.g. "mouse" = powers that take over the mouse buttons). nullptr = no group.
+    virtual const char* ExclusiveGroup() const { return nullptr; }
 
     // Read tuning values from [Power.<Id>]. Called once at startup.
     virtual void LoadConfig(const Config&, const char* section) {}

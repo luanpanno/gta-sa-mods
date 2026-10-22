@@ -10,6 +10,7 @@
 #include "CTimer.h"
 
 #include <cstdio>
+#include <cstring>
 
 using namespace plugin;
 
@@ -33,6 +34,12 @@ void PowerManager::LoadConfig(const Config& config) {
 void PowerManager::SetActive(Power& power, CPlayerPed* player, bool active) {
     if (power.m_active == active)
         return;
+    if (active && power.ExclusiveGroup()) {
+        for (auto& other : m_powers)
+            if (other.get() != &power && other->m_active && other->ExclusiveGroup() &&
+                std::strcmp(other->ExclusiveGroup(), power.ExclusiveGroup()) == 0)
+                SetActive(*other, player, false);
+    }
     power.m_active = active;
     power.m_level = active ? 1 : 0;
     if (active) {
