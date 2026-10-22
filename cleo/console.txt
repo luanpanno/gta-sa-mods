@@ -1,4 +1,4 @@
-// Phase 1.3: Spawn console
+// Phase 1.3 + 1.4: Spawn console with quality-of-life toggles
 // Sanny Builder 4, mode: GTA SA (v1.0 - SBL)
 //
 //   F9         : open / close the console (CJ freezes while it's open)
@@ -11,7 +11,16 @@
 //   money <amount>     money 1000000
 //   wanted <0-6>       wanted 0
 //   health             full health + armor
-//   tp <place>         tp marker (map waypoint) / grove / sf / lv / chiliad
+//   tp <place>         tp marker (map waypoint) / grove / sf / lv / chiliad, or a name saved with "save"
+//   save <name>        remember where CJ stands (stored in root:\gta-sa-mods.ini)
+//   fix                repair the car you're in
+//   time <0-23>        set the hour
+//   weather <id|auto>  weather 0 = sunny, 8 = storm, 9 = fog, 19 = sandstorm, auto = back to normal
+// Toggles (shown top-left while on):
+//   god                CJ (and his current car) can't be hurt
+//   ammo               infinite ammo
+//   cops               on = police never chase you
+//   stamina            CJ never gets tired
 
 {$CLEO .cs}
 
@@ -25,6 +34,20 @@ int len = 0
 int isOpen = false
 int key
 int addr
+
+// toggles (RUN_COMMAND returns which one to flip)
+const TOGGLE_NONE = 0
+const TOGGLE_GOD = 1
+const TOGGLE_AMMO = 2
+const TOGGLE_COPS = 3
+const TOGGLE_STAMINA = 4
+int toggle
+int godMode = false
+int infiniteAmmo = false
+int noCops = false
+int noTired = false
+int currentWeapon // "weapon" is taken: it's a Sanny class name
+int playerCar
 
 wait {time} 3000
 
@@ -49,6 +72,54 @@ while true
         else
             isOpen = false
             set_player_control $player1 {state} true
+        end
+    end
+
+    // --- toggles: re-applied every frame (the game resets some of them, e.g. after dying) ---
+    if
+        is_player_playing $player1
+    then
+        if
+            godMode == true
+        then
+            set_char_proofs $scplayer {bullet} true {fire} true {explosion} true {collision} true {melee} true
+            if
+                is_char_in_any_car $scplayer
+            then
+                playerCar = store_car_char_is_in_no_save $scplayer
+                set_car_proofs playerCar {bullet} true {fire} true {explosion} true {collision} true {melee} true
+            end
+        end
+
+        if
+            infiniteAmmo == true
+        then
+            currentWeapon = get_current_char_weapon $scplayer
+            if
+                currentWeapon >= 16 // 0-15 are fists and melee weapons
+            then
+                set_char_ammo $scplayer {weaponType} currentWeapon {ammo} 9999
+            end
+        end
+
+        if
+            noCops == true
+        then
+            clear_wanted_level $player1
+        end
+
+        // HUD: active toggles, top-left
+        if or
+            godMode == true
+            infiniteAmmo == true
+            noCops == true
+            noTired == true
+        then
+            use_text_commands {state} true
+            DRAW_TOGGLE(godMode, 20.0, 1)
+            DRAW_TOGGLE(infiniteAmmo, 60.0, 2)
+            DRAW_TOGGLE(noCops, 105.0, 3)
+            DRAW_TOGGLE(noTired, 150.0, 4)
         end
     end
 
@@ -111,7 +182,60 @@ while true
         if
             len > 0
         then
-            RUN_COMMAND(inputText, len, cmd)
+            toggle = RUN_COMMAND(inputText, len, cmd)
+            switch toggle
+                case TOGGLE_GOD
+                    if
+                        godMode == false
+                    then
+                        godMode = true
+                        print_help_string {text} "God mode ~g~ON"
+                    else
+                        godMode = false
+                        set_char_proofs $scplayer {bullet} false {fire} false {explosion} false {collision} false {melee} false
+                        if
+                            is_char_in_any_car $scplayer
+                        then
+                            playerCar = store_car_char_is_in_no_save $scplayer
+                            set_car_proofs playerCar {bullet} false {fire} false {explosion} false {collision} false {melee} false
+                        end
+                        print_help_string {text} "God mode ~r~OFF"
+                    end
+                case TOGGLE_AMMO
+                    if
+                        infiniteAmmo == false
+                    then
+                        infiniteAmmo = true
+                        print_help_string {text} "Infinite ammo ~g~ON"
+                    else
+                        infiniteAmmo = false
+                        print_help_string {text} "Infinite ammo ~r~OFF"
+                    end
+                case TOGGLE_COPS
+                    if
+                        noCops == false
+                    then
+                        noCops = true
+                        set_max_wanted_level {wantedLevel} 0
+                        print_help_string {text} "Police ~g~ignore you"
+                    else
+                        noCops = false
+                        set_max_wanted_level {wantedLevel} 6
+                        print_help_string {text} "Police ~r~back to normal"
+                    end
+                case TOGGLE_STAMINA
+                    if
+                        noTired == false
+                    then
+                        noTired = true
+                        set_player_never_gets_tired $player1 {state} true
+                        print_help_string {text} "Infinite stamina ~g~ON"
+                    else
+                        noTired = false
+                        set_player_never_gets_tired $player1 {state} false
+                        print_help_string {text} "Infinite stamina ~r~OFF"
+                    end
+            end
         end
     end
 
@@ -124,7 +248,13 @@ while true
         set_text_scale {width} 0.35 {height} 1.4
         set_text_colour {rgb} 180 180 180 {alpha} 255
         set_text_edge {size} 1 {rgb} 0 0 0 {alpha} 255
-        display_text_formatted {pos} 20.0 375.0 {format} "car / weapon / money / wanted / health / tp (marker grove sf lv chiliad)"
+        display_text_formatted {pos} 20.0 355.0 {format} "car / weapon / money / wanted / health / fix / time / weather"
+
+        set_text_font {font} Font.Subtitles
+        set_text_scale {width} 0.35 {height} 1.4
+        set_text_colour {rgb} 180 180 180 {alpha} 255
+        set_text_edge {size} 1 {rgb} 0 0 0 {alpha} 255
+        display_text_formatted {pos} 20.0 375.0 {format} "tp (marker grove sf lv chiliad <saved>) / save / god / ammo / cops / stamina"
 
         set_text_font {font} Font.Subtitles
         set_text_scale {width} 0.5 {height} 2.0
@@ -139,7 +269,7 @@ terminate_this_custom_script
 
 // Splits "word rest" and runs the matching command.
 //   inputText: pointer to the typed text, len: its length, cmd: scratch buffer for the first word
-function RUN_COMMAND(inputText: int, len: int, cmd: int)
+function RUN_COMMAND(inputText: int, len: int, cmd: int): int
     // find the first space
     int spacePos = 0
     int b
@@ -217,7 +347,7 @@ function RUN_COMMAND(inputText: int, len: int, cmd: int)
             SPAWN_CAR(model)
             print_help_formatted {text} "Spawned vehicle ~y~%d" {args} model
         end
-        return
+        return TOGGLE_NONE
     end
 
     if
@@ -238,7 +368,7 @@ function RUN_COMMAND(inputText: int, len: int, cmd: int)
             mark_model_as_no_longer_needed {modelId} weaponModel
             print_help_formatted {text} "Weapon: ~y~%s" {args} arg
         end
-        return
+        return TOGGLE_NONE
     end
 
     if
@@ -251,7 +381,7 @@ function RUN_COMMAND(inputText: int, len: int, cmd: int)
         else
             add_score $player1 {money} argNum
         end
-        return
+        return TOGGLE_NONE
     end
 
     if
@@ -271,7 +401,7 @@ function RUN_COMMAND(inputText: int, len: int, cmd: int)
                 alter_wanted_level $player1 {wantedLevel} argNum
             end
         end
-        return
+        return TOGGLE_NONE
     end
 
     if
@@ -280,17 +410,154 @@ function RUN_COMMAND(inputText: int, len: int, cmd: int)
         set_char_health $scplayer {health} 100
         add_armour_to_char $scplayer {amount} 100
         print_help_string {text} "Health and armor restored"
-        return
+        return TOGGLE_NONE
     end
 
     if
         is_text_equal {text} cmd {another} "tp" {ignoreCase} true
     then
         TELEPORT(arg)
-        return
+        return TOGGLE_NONE
+    end
+
+    if
+        is_text_equal {text} cmd {another} "save" {ignoreCase} true
+    then
+        SAVE_PLACE(arg)
+        return TOGGLE_NONE
+    end
+
+    if
+        is_text_equal {text} cmd {another} "fix" {ignoreCase} true
+    then
+        if
+            is_char_in_any_car $scplayer
+        then
+            int vehicle = store_car_char_is_in_no_save $scplayer
+            fix_car vehicle
+            set_car_health vehicle {health} 1000
+            print_help_string {text} "Vehicle repaired"
+        else
+            print_help_string {text} "~r~You're not in a vehicle"
+        end
+        return TOGGLE_NONE
+    end
+
+    if
+        is_text_equal {text} cmd {another} "time" {ignoreCase} true
+    then
+        if or
+            argNum < 0
+            argNum > 23
+        then
+            print_help_string {text} "Usage: time <0-23>"
+        else
+            set_time_of_day {hours} argNum {minutes} 0
+            print_help_formatted {text} "Time set to ~y~%02d:00" {args} argNum
+        end
+        return TOGGLE_NONE
+    end
+
+    if
+        is_text_equal {text} cmd {another} "weather" {ignoreCase} true
+    then
+        if
+            is_text_equal {text} arg {another} "auto" {ignoreCase} true
+        then
+            release_weather
+            print_help_string {text} "Weather back to normal"
+        else
+            if or
+                argNum < 0
+                argNum > 22
+            then
+                print_help_string {text} "Usage: weather <0-22> or weather auto"
+            else
+                force_weather_now {type} argNum
+                print_help_formatted {text} "Weather set to ~y~%d" {args} argNum
+            end
+        end
+        return TOGGLE_NONE
+    end
+
+    if
+        is_text_equal {text} cmd {another} "god" {ignoreCase} true
+    then
+        return TOGGLE_GOD
+    end
+    if
+        is_text_equal {text} cmd {another} "ammo" {ignoreCase} true
+    then
+        return TOGGLE_AMMO
+    end
+    if
+        is_text_equal {text} cmd {another} "cops" {ignoreCase} true
+    then
+        return TOGGLE_COPS
+    end
+    if
+        is_text_equal {text} cmd {another} "stamina" {ignoreCase} true
+    then
+        return TOGGLE_STAMINA
     end
 
     print_help_formatted {text} "~r~Unknown command:~s~ %s" {args} cmd
+    return TOGGLE_NONE
+end
+
+
+// Draws one toggle label in the top-left HUD (green when on, hidden when off).
+function DRAW_TOGGLE(isOn: int, posX: float, which: int)
+    if
+        isOn == false
+    then
+        return
+    end
+    set_text_font {font} Font.Subtitles
+    set_text_scale {width} 0.3 {height} 1.2
+    set_text_colour {rgb} 120 255 120 {alpha} 255
+    set_text_edge {size} 1 {rgb} 0 0 0 {alpha} 255
+    switch which
+        case 1
+            display_text_formatted {pos} posX 10.0 {format} "GOD"
+        case 2
+            display_text_formatted {pos} posX 10.0 {format} "AMMO"
+        case 3
+            display_text_formatted {pos} posX 10.0 {format} "NOCOPS"
+        default
+            display_text_formatted {pos} posX 10.0 {format} "STAMINA"
+    end
+end
+
+
+// Saves CJ's position, heading and interior under a name, in root:\gta-sa-mods.ini (section [teleports]).
+function SAVE_PLACE(place: int)
+    if
+        is_text_empty {string} place
+    then
+        print_help_string {text} "Usage: save <name>"
+        return
+    end
+
+    float x, y, z
+    x, y, z = get_char_coordinates $scplayer
+    float heading = get_char_heading $scplayer
+    int area = get_char_area_visible $scplayer
+
+    int keyName = allocate_memory {size} 64
+    string_format keyName = "%s_x" place
+    write_float_to_ini_file {value} x {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    string_format keyName = "%s_y" place
+    write_float_to_ini_file {value} y {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    string_format keyName = "%s_z" place
+    write_float_to_ini_file {value} z {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    string_format keyName = "%s_heading" place
+    write_float_to_ini_file {value} heading {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    string_format keyName = "%s_area" place
+    write_int_to_ini_file {value} area {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    free_memory {address} keyName
+
+    print_help_formatted {text} "Saved place ~y~%s~s~. Use: tp %s" {args} place place
 end
 
 
@@ -477,9 +744,19 @@ function TELEPORT(place: int)
     if
         found == false
     then
-        print_help_formatted {text} "~r~Unknown place:~s~ %s (marker grove sf lv chiliad)" {args} place
+        // not a built-in place: try one saved with "save <name>"
+        found = LOAD_PLACE(place)
+        if
+            found == false
+        then
+            print_help_formatted {text} "~r~Unknown place:~s~ %s (marker grove sf lv chiliad, or save one first)" {args} place
+        end
         return
     end
+
+    // built-in places are all outdoors (area 0), even if you're inside an interior now
+    set_area_visible {areaId} 0
+    set_char_area_visible $scplayer {areaId} 0
 
     // stream the destination in, then find the ground height there
     request_collision {pos} x y
@@ -496,4 +773,50 @@ function TELEPORT(place: int)
         set_char_coordinates $scplayer {pos} x y z
     end
     print_help_formatted {text} "Teleported to ~y~%s" {args} place
+end
+
+
+// Teleports to a place saved by SAVE_PLACE. Returns false if the name isn't in the INI file.
+function LOAD_PLACE(place: int): int
+    float x, y, z, heading
+    int area
+    int keyName = allocate_memory {size} 64
+
+    string_format keyName = "%s_x" place
+    if
+        x = read_float_from_ini_file {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    then
+        // found it
+    else
+        free_memory {address} keyName
+        return false
+    end
+    string_format keyName = "%s_y" place
+    y = read_float_from_ini_file {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    string_format keyName = "%s_z" place
+    z = read_float_from_ini_file {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    string_format keyName = "%s_heading" place
+    heading = read_float_from_ini_file {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    string_format keyName = "%s_area" place
+    area = read_int_from_ini_file {path} "root:\gta-sa-mods.ini" {section} "teleports" {key} keyName
+    free_memory {address} keyName
+
+    // interiors (area <> 0) need the right "area" made visible, or CJ floats in a void
+    set_area_visible {areaId} area
+    set_char_area_visible $scplayer {areaId} area
+    request_collision {pos} x y
+    load_scene {pos} x y z
+
+    if
+        is_char_in_any_car $scplayer
+    then
+        int vehicle = store_car_char_is_in_no_save $scplayer
+        set_car_coordinates vehicle {pos} x y z
+        set_car_heading vehicle {heading} heading
+    else
+        set_char_coordinates $scplayer {pos} x y z
+        set_char_heading $scplayer {heading} heading
+    end
+    print_help_formatted {text} "Teleported to ~y~%s" {args} place
+    return true
 end

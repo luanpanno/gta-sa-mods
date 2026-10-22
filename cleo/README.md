@@ -7,6 +7,7 @@ Sources are `.txt` files written in Sanny Builder 4 syntax. Compiling (F6) produ
 | `hello.txt` | 1.1 | F5 shows a help box with a press counter |
 | `vehicle_spawner.txt` | 1.2 | F7/F8 chooses one of 12 vehicles, F6 spawns it in front of CJ, Shift+F6 spawns it and puts CJ in it |
 | `console.txt` | 1.3 | F9 opens a command console: `car infernus`, `car 411`, `weapon minigun`, `money 1000000`, `wanted 0`, `health`, `tp marker` / `grove` / `sf` / `lv` / `chiliad` |
+| `console.txt` | 1.4 | Quality-of-life commands: `save <name>` + `tp <name>` (saved to `root:\gta-sa-mods.ini`), `fix`, `time <0-23>`, `weather <id\|auto>`. Toggles shown top-left while on: `god`, `ammo`, `cops`, `stamina` |
 
 ## Sanny Builder: first-time setup
 1. Run `C:\Tools\SannyBuilder\sanny.exe`.
@@ -57,6 +58,12 @@ This copies `hello.cs` to `modloader\MyCleoMods\` and starts the game. Load a sa
 - `2080: is_key_just_pressed` uses an **opcode prefix** to pick one specific command. Two plugins define that name, and we want CLEO 5's (2080), not CLEO+'s (0E3D, which isn't installed).
 - `if x, y, z = get_target_blip_coords then` is a command that both returns values and acts as a condition (false when no waypoint is set).
 - `get_ground_z_for_3d_coord` after `load_scene` lets a teleport store only X/Y. The height comes from the ground.
+
+### New in console.txt (1.4)
+- **Functions can't change the caller's variables.** Arguments are copies, so `RUN_COMMAND` *returns* a code (`TOGGLE_GOD`...) and the main loop flips its own flag. A pointer to shared memory would also work.
+- **Toggles are re-applied every frame**, not once. The game resets things like proofs when you die or switch cars, so re-applying keeps them working.
+- **INI files** (`write_float_to_ini_file` / `read_float_from_ini_file`) give simple persistence. `root:\` = game folder, `user:\` = save-game folder, `.\` = the script's own folder.
+- **Interiors** use "areas": 0 is outside, and every interior has its own number. Teleporting into one needs `set_area_visible` plus `set_char_area_visible`, or you end up floating in a void.
 - `const VEHICLE_COUNT = 12` is a compile-time constant.
 - `#INFERNUS` is a model name, which Sanny turns into ID 411 (from `data\vehicles.ide`).
 - **Model streaming:** the game only keeps a few models in memory. So you call `request_model`, wait until `has_model_loaded`, create the car, then `mark_model_as_no_longer_needed`.
