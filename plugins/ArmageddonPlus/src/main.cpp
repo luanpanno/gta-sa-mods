@@ -8,6 +8,8 @@
 #include "core/PowerManager.h"
 #include "powers/BulletTime.h"
 #include "powers/ExplosionPunch.h"
+#include "powers/FireTrail.h"
+#include "powers/LightningStrike.h"
 #include "powers/Flight.h"
 #include "powers/Force.h"
 #include "powers/Invulnerability.h"
@@ -56,6 +58,8 @@ public:
         g_powers.Register(std::make_unique<ExplosionPunch>());
         g_powers.Register(std::make_unique<Telekinesis>());
         g_powers.Register(std::make_unique<Force>());
+        g_powers.Register(std::make_unique<LightningStrike>());
+        g_powers.Register(std::make_unique<FireTrail>());
         g_powers.Register(std::make_unique<BulletTime>()); // after the others: it speeds up CJ's anims as they are
         g_powers.Register(std::make_unique<Invulnerability>());
         g_powers.Register(std::make_unique<SpawnVehicle>());
