@@ -36,6 +36,7 @@ public:
     virtual void OnLevelChanged(CPlayerPed* player, int level) {} // after OnActivate, and on every level step
     virtual void Update(CPlayerPed* player, float dt) {} // every frame while active; dt in seconds
     virtual void UpdateAlways(CPlayerPed* player, float dt) {} // every frame, active or not (clean-up after turning off)
+    virtual void Draw() {} // HUD drawing (screen effects etc.), every frame while active
 
     bool IsActive() const { return m_active; }
     int Level() const { return m_level; } // 0 when off, 1..MaxLevel() when on

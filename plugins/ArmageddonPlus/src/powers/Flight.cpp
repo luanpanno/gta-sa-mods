@@ -8,6 +8,7 @@
 #include "CPad.h"
 #include "CPlayerPed.h"
 #include "CPools.h"
+#include "CTimer.h"
 #include "extensions/ScriptCommands.h"
 
 #include <cmath>
@@ -101,12 +102,17 @@ void Flight::Update(CPlayerPed* player, float dt) {
     CVector target = (front * forward + right * strafe) * m_speed[lvl];
     target.z += vertical * m_climb[lvl];
 
+    // game time may be slowed (Bullet Time): CJ's flight should still follow real time
+    float timeScale = CTimer::ms_fTimeScale > 0.05f ? CTimer::ms_fTimeScale : 0.05f;
+    float realDt = dt / timeScale;
+
     // ease toward the target velocity (frame-rate independent)
-    float blend = 1.0f - std::exp(-m_responsiveness * dt);
+    float blend = 1.0f - std::exp(-m_responsiveness * realDt);
     m_velocity += (target - m_velocity) * blend;
 
-    // the game moves CJ by this velocity during the next physics update, with collisions
-    player->m_vecMoveSpeed = m_velocity / kStepsPerSecond;
+    // the game moves CJ by this velocity during the next physics update, with collisions.
+    // Physics steps are shortened by the time scale, so scale the velocity up to compensate.
+    player->m_vecMoveSpeed = m_velocity / (kStepsPerSecond * timeScale);
 
     // face the direction of travel
     if (m_velocity.Magnitude2D() > 1.0f) {

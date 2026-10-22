@@ -6,6 +6,7 @@
 #include "core/Log.h"
 #include "core/Menu.h"
 #include "core/PowerManager.h"
+#include "powers/BulletTime.h"
 #include "powers/ExplosionPunch.h"
 #include "powers/Flight.h"
 #include "powers/Force.h"
@@ -55,6 +56,7 @@ public:
         g_powers.Register(std::make_unique<ExplosionPunch>());
         g_powers.Register(std::make_unique<Telekinesis>());
         g_powers.Register(std::make_unique<Force>());
+        g_powers.Register(std::make_unique<BulletTime>()); // after the others: it speeds up CJ's anims as they are
         g_powers.Register(std::make_unique<Invulnerability>());
         g_powers.Register(std::make_unique<SpawnVehicle>());
 
@@ -69,6 +71,7 @@ public:
             g_powers.Update();
         };
         Events::drawHudEvent += [] { // every frame, while the HUD is drawn
+            g_powers.DrawPowers(); // screen effects first, so text draws on top
             DrawWatermark();
             if (!g_menu.IsOpen())
                 g_powers.DrawOverlay(); // the menu already shows every power's state

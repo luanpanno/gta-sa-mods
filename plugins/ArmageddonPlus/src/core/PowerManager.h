@@ -16,6 +16,7 @@ public:
 
     void Update();     // call from Events::gameProcessEvent, after Input::Update()
     void DrawOverlay(); // call from Events::drawHudEvent
+    void DrawPowers();  // active powers' own HUD/screen effects; call from Events::drawHudEvent
 
     void DeactivateAll(CPlayerPed* player);
 

@@ -130,6 +130,12 @@ void PowerManager::Update() {
     }
 }
 
+void PowerManager::DrawPowers() {
+    for (auto& power : m_powers)
+        if (power->m_active)
+            power->Draw();
+}
+
 void PowerManager::DrawOverlay() {
     if (!m_overlayEnabled)
         return;
