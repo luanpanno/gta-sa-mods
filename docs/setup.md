@@ -22,7 +22,9 @@ The copy is outside Program Files, so there are no permission (UAC) problems whe
 ## 2. Downgrade the copy to 1.0 US
 The current Steam build (`gta-sa.exe`, about 5.9 MB) isn't supported by CLEO, plugin-sdk or most mods. They need the original `gta_sa.exe` 1.0 US.
 
-1. Use a downgrader that supports the current Steam build. We used the "San Andreas Downgrader" from [GTAForums topic 927016](https://gtaforums.com/topic/927016-san-andreas-downgrader/). An open-source alternative is [Jetpack Downgrader](https://github.com/Zalexanninev15/Jetpack-Downgrader).
+1. Use a downgrader that supports the current Steam build:
+   - **What we used:** the "San Andreas Downgrader" from [GTAForums topic 927016](https://gtaforums.com/topic/927016-san-andreas-downgrader/).
+   - **Open-source alternative:** [Jetpack Downgrader](https://github.com/Zalexanninev15/Jetpack-Downgrader) → [release 2.3.0.1](https://github.com/Zalexanninev15/Jetpack-Downgrader/releases/tag/2.3.0.1), `JPD_WithPatches.zip`. Needs .NET Framework 4.8, which Windows 11 already includes. Skip its "install mods" stage.
 2. Point it **only at `C:\Games\GTA-SA-Modding`**.
 3. Check the result:
    ```powershell
@@ -37,15 +39,17 @@ The downgrader also restores the 1.0 data files (`gta3.img`, `anim.img`, `main.s
 ## 3. Install the base mods
 Extract each one into `C:\Games\GTA-SA-Modding`:
 
-| Mod | Asset | Adds | Source |
+| Mod | Download (version used) | Adds | All releases |
 |---|---|---|---|
-| CLEO 5 + Ultimate ASI Loader | `SA.CLEO-vX+Ultimate_ASI_Loader.zip` | `CLEO.asi`, `bass.dll`, `cleo\`, `vorbisFile.dll` (the ASI loader) | [cleolibrary/CLEO5](https://github.com/cleolibrary/CLEO5/releases) |
-| SilentPatch | `SilentPatchSA.zip` | `SilentPatchSA.asi`, `SilentPatchSA.ini` | [CookiePLMonster/SilentPatch](https://github.com/CookiePLMonster/SilentPatch/releases) |
-| Modloader | `modloader.zip` | `modloader.asi`, `modloader\` | [thelink2012/modloader](https://github.com/thelink2012/modloader/releases) |
+| CLEO 5 + Ultimate ASI Loader | [SA.CLEO-v5.4.0+Ultimate_ASI_Loader.zip](https://github.com/cleolibrary/CLEO5/releases/download/v5.4.0/SA.CLEO-v5.4.0%2BUltimate_ASI_Loader.zip) | `CLEO.asi`, `bass.dll`, `cleo\`, `vorbisFile.dll` (the ASI loader) | [cleolibrary/CLEO5](https://github.com/cleolibrary/CLEO5/releases) |
+| SilentPatch | [SilentPatchSA.zip](https://github.com/CookiePLMonster/SilentPatch/releases/download/1.1-BUILD34.1-SA/SilentPatchSA.zip) (1.1 build 34.1) | `SilentPatchSA.asi`, `SilentPatchSA.ini` | [CookiePLMonster/SilentPatch](https://github.com/CookiePLMonster/SilentPatch/releases) |
+| Modloader | [modloader.zip](https://github.com/thelink2012/modloader/releases/download/v0.3.10/modloader.zip) (v0.3.10) | `modloader.asi`, `modloader\` | [thelink2012/modloader](https://github.com/thelink2012/modloader/releases) |
+| *(optional)* Widescreen Fix | [Release gtasa](https://github.com/ThirteenAG/WidescreenFixesPack/releases/tag/gtasa) → `GTASA.WidescreenFix.zip` | widescreen and HUD fixes | [ThirteenAG/WidescreenFixesPack](https://github.com/ThirteenAG/WidescreenFixesPack/releases) |
+
+CLEO's bundle already includes the [Ultimate ASI Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader/releases), so you don't need to download it separately.
 
 - **Back up the original `vorbisFile.dll` first** (e.g. as `vorbisFile.dll.original`). The ASI loader replaces it.
 - To uninstall: delete the files above and rename `vorbisFile.dll.original` back.
-- Optional: [WidescreenFixesPack](https://github.com/ThirteenAG/WidescreenFixesPack/releases) for proper widescreen/HUD.
 
 ## 4. First launch and backup
 1. Run `C:\Games\GTA-SA-Modding\gta_sa.exe`. CLEO's version text should appear in the bottom-left corner of the main menu.
@@ -59,10 +63,11 @@ Extract each one into `C:\Games\GTA-SA-Modding`:
 ## 5. Dev tools
 | Tool | Install | Used for |
 |---|---|---|
-| Git | [git-scm.com](https://git-scm.com) | this repo |
-| VSCode + C/C++ extension (`ms-vscode.cpptools`) | [code.visualstudio.com](https://code.visualstudio.com) | editing, build task, IntelliSense |
-| Sanny Builder 4 | Portable zip from [sannybuilder/dev releases](https://github.com/sannybuilder/dev/releases), extracted to `C:\Tools\SannyBuilder` | compiling CLEO scripts |
-| Visual Studio 2022 Build Tools | see below | C++ compiler (MSVC, x86) |
+| Git | [git-scm.com/download/win](https://git-scm.com/download/win) | this repo |
+| VSCode | [code.visualstudio.com](https://code.visualstudio.com/) | editing, build task |
+| C/C++ extension | [ms-vscode.cpptools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools), or in VSCode: Extensions → "C/C++" | IntelliSense |
+| Sanny Builder 4 | Portable: [SannyBuilder-v4.2.0.zip](https://github.com/sannybuilder/dev/releases/download/v4.2.0/SannyBuilder-v4.2.0.zip) ([all releases](https://github.com/sannybuilder/dev/releases)), extracted to `C:\Tools\SannyBuilder` | compiling CLEO scripts |
+| Visual Studio 2022 Build Tools | [vs_BuildTools.exe](https://aka.ms/vs/17/release/vs_BuildTools.exe) (pick *Desktop development with C++*), or the `winget` command below | C++ compiler (MSVC, x86) |
 
 ```powershell
 winget install --id Microsoft.VisualStudio.2022.BuildTools --exact --override "--passive --wait --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"

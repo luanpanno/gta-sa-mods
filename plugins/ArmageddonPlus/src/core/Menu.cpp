@@ -23,7 +23,7 @@ namespace {
 // rows after the powers
 enum SettingRow { ROW_OVERLAY, ROW_CLOSE, SETTING_ROWS };
 
-// layout, in the game's 640x448 "virtual screen" units (SCREEN_COORD scales them)
+// layout, in plugin-sdk's reference units: pixels on a 1080-pixel-tall screen (SCREEN_COORD scales them)
 const float kLeft = 30.0f;
 const float kWidth = 260.0f;
 const float kTop = 90.0f;

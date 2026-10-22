@@ -1,6 +1,6 @@
 # ArmageddonPlus (C++ / plugin-sdk)
 
-The superpowers plugin. How to *use* the powers: [docs/powers.md](../../docs/powers.md). This page is about how the plugin works and how to extend it.
+The superpowers plugin. How to *use* the powers: [docs/powers.md](../../docs/powers.md). This page is about how the plugin works and how to extend it. For the full story of how code ends up running inside the game, read [docs/how-a-mod-works.md](../../docs/how-a-mod-works.md).
 
 An `.asi` is a Windows DLL with a different extension. The ASI loader (bundled with CLEO) loads it into `gta_sa.exe` at startup. From then on, our code runs **inside the game process**: it can call engine functions and read and write engine objects directly, through [plugin-sdk](https://github.com/DK22Pac/plugin-sdk)'s headers.
 
@@ -94,4 +94,4 @@ It shows up in the menu automatically.
 
 - **Headers win over examples.** Some plugin-sdk examples are out of date: `m_fCurrentRotation` is now `m_fHeadingCurrent`, proof flags are plain `bBulletProof` members of `CPhysical`, and so on. When something doesn't compile, search `C:\dev\plugin-sdk\plugin_sa\game_sa\*.h`.
 - **You're inside the game process.** A null pointer or a bad write crashes the game instantly, with no error message. Check pointers and watch the log.
-- **Screen coordinates:** `SCREEN_COORD(x)` scales a 640×448-style value to the real resolution. `SCREEN_COORD_RIGHT(x)` measures from the right edge.
+- **Screen coordinates:** `SCREEN_COORD(x)` scales a value designed for a **1080-pixel-tall** screen to the real resolution (`x × shorter side / 1080`). `SCREEN_COORD_RIGHT(x)` measures from the right edge. Details: [how-a-mod-works.md §8.5](../../docs/how-a-mod-works.md#85-screen-coordinates).

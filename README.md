@@ -45,16 +45,28 @@ Telekinesis, Force and Lightning Strike all use the mouse buttons, so only one o
 Details: [cleo/README.md](cleo/README.md).
 
 ## Requirements
-| What | Version used | Why |
-|---|---|---|
-| GTA San Andreas (Steam) | Steam build, **downgraded to 1.0 US** in a copy | Almost every mod and tool needs the original 1.0 US `gta_sa.exe` |
-| CLEO 5 (+ Ultimate ASI Loader) | 5.4.0 | Runs `.cs` scripts and loads `.asi` plugins |
-| SilentPatch | 1.1 build 34.1 | Bug fixes and modern Windows compatibility |
-| Modloader | 0.3.10 | Mods live in their own folders; the game files stay clean |
-| Sanny Builder | 4.2.0 | Compiles CLEO scripts |
-| Visual Studio 2022 Build Tools | 17.14 (MSVC 14.44) | C++ compiler (x86) |
-| plugin-sdk | commit `15f15b6` | GTA SA engine headers and library |
-| Windows | 10/11 | |
+Everything is free except the game. Download only from these official pages.
+
+### The game and the in-game mods
+| What | Version used | Why | Download |
+|---|---|---|---|
+| GTA San Andreas | Steam build, **downgraded to 1.0 US** in a copy | Almost every mod and tool needs the original 1.0 US `gta_sa.exe` | [Steam store page](https://store.steampowered.com/app/12120/) |
+| San Andreas Downgrader | - | Turns the copy into v1.0 US | [GTAForums topic](https://gtaforums.com/topic/927016-san-andreas-downgrader/) (what we used) or [Jetpack Downgrader](https://github.com/Zalexanninev15/Jetpack-Downgrader/releases) (open source) |
+| CLEO 5 + Ultimate ASI Loader | 5.4.0 | Runs `.cs` scripts and loads `.asi` plugins | [Release v5.4.0](https://github.com/cleolibrary/CLEO5/releases/tag/v5.4.0) → `SA.CLEO-v5.4.0+Ultimate_ASI_Loader.zip` · [cleo.li](https://cleo.li/) |
+| SilentPatch | 1.1 build 34.1 | Bug fixes and modern Windows compatibility | [Release 1.1-BUILD34.1-SA](https://github.com/CookiePLMonster/SilentPatch/releases/tag/1.1-BUILD34.1-SA) → `SilentPatchSA.zip` |
+| Modloader | 0.3.10 | Mods live in their own folders; the game files stay clean | [Release v0.3.10](https://github.com/thelink2012/modloader/releases/tag/v0.3.10) → `modloader.zip` |
+| Widescreen Fix *(optional)* | - | Proper widescreen and HUD proportions | [Release gtasa](https://github.com/ThirteenAG/WidescreenFixesPack/releases/tag/gtasa) → `GTASA.WidescreenFix.zip` |
+
+### Development tools
+| What | Version used | Why | Download |
+|---|---|---|---|
+| Git | 2.56 | Version control | [git-scm.com/download/win](https://git-scm.com/download/win) |
+| VSCode | latest | Editor, build task (Ctrl+Shift+B) | [code.visualstudio.com](https://code.visualstudio.com/) |
+| C/C++ extension | latest | IntelliSense for plugin-sdk | [ms-vscode.cpptools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) |
+| Visual Studio 2022 Build Tools | 17.14 (MSVC 14.44) | C++ compiler (x86). Workload: *Desktop development with C++* | [Direct installer](https://aka.ms/vs/17/release/vs_BuildTools.exe) · [downloads page](https://visualstudio.microsoft.com/downloads/) (*Tools for Visual Studio*) · or `winget`, see [setup](docs/setup.md#5-dev-tools) |
+| Sanny Builder | 4.2.0 | Compiles CLEO scripts | [Release v4.2.0](https://github.com/sannybuilder/dev/releases/tag/v4.2.0) → `SannyBuilder-v4.2.0.zip` · [sannybuilder.com](https://sannybuilder.com/) |
+| plugin-sdk | commit `15f15b6` | GTA SA engine headers and library | [github.com/DK22Pac/plugin-sdk](https://github.com/DK22Pac/plugin-sdk) (clone it, see [setup](docs/setup.md#6-plugin-sdk)) |
+| Windows | 10/11 | | |
 
 ## Getting started
 The full setup, with download links and checks for each step, is in **[docs/setup.md](docs/setup.md)**. In short:
@@ -98,6 +110,7 @@ gta-sa-mods/
 │   └── ArmageddonPlus.ini       power settings (levels, speeds, keys); deployed next to the .asi
 ├── docs/
 │   ├── setup.md                 environment setup, from a clean PC to a working modded game
+│   ├── how-a-mod-works.md       deep dive: from C++ to the game (HUD + Flight as examples)
 │   ├── powers.md                player guide: every power, controls, tips
 │   └── troubleshooting.md       known problems and fixes
 ├── plugins/ArmageddonPlus/      C++ plugin (plugin-sdk)
@@ -132,6 +145,7 @@ All power tuning lives in [config/ArmageddonPlus.ini](config/ArmageddonPlus.ini)
 ## Documentation
 | Doc | For |
 |---|---|
+| [docs/how-a-mod-works.md](docs/how-a-mod-works.md) | **Deep dive:** how a GTA SA mod works from code to game. The ASI loader, plugin-sdk hooks, the frame loop, then the HUD/menu and Flight step by step |
 | [docs/setup.md](docs/setup.md) | Setting up a PC from scratch |
 | [docs/powers.md](docs/powers.md) | Playing: what each power does and how to control it |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Things that went wrong before, and their fixes |
