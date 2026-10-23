@@ -22,6 +22,7 @@ public:
     int MaxLevel() const override { return kLevels; }
 
     void LoadConfig(const Config& config, const char* section) override;
+    void OnActivate(CPlayerPed* player) override;
     void Update(CPlayerPed* player, float dt) override;
     void OnDeactivate(CPlayerPed* player) override;
     void Draw() override;

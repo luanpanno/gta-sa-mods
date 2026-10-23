@@ -55,6 +55,7 @@ private:
     int m_descendKey = 0;
 
     CVector m_velocity;            // current velocity, m/s
+    float m_dustTimer = 0.0f;      // seconds until the next downdraft dust puff
     bool m_flying = false;         // we turned gravity off
     bool m_landingGuard = false;   // collision-proof until CJ touches the ground
     bool m_wasCollisionProof = false;

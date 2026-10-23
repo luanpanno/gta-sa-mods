@@ -1,6 +1,8 @@
 #include "powers/Telekinesis.h"
 
 #include "core/Config.h"
+#include "core/Fx.h"
+#include "core/Sound.h"
 #include "core/Input.h"
 #include "core/Log.h"
 
@@ -145,6 +147,8 @@ void Telekinesis::Grab(CPlayerPed* player, CPhysical* entity) {
         CVector pos = entity->GetPosition();
         entity->SetPosn(pos.x, pos.y, pos.z + 0.3f);
     }
+    Sound::Play(Sound::Zap, 0.8f);
+    Fx::Spawn("camflash", entity->GetPosition()); // a flash on the grabbed thing
     Log::Info("Telekinesis: grabbed entity type %d", m_heldType);
 }
 
@@ -169,6 +173,7 @@ void Telekinesis::Release(CPlayerPed* player, bool throwIt) {
             CVector from, direction;
             AimRay(player, from, direction);
             m_held->m_vecMoveSpeed = direction * (m_throwSpeed[Level() - 1] / kStepsPerSecond);
+            Sound::Play(Sound::Whoosh, 0.5f + 0.2f * (Level() - 1));
         }
     }
     m_held = nullptr;

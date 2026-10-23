@@ -27,6 +27,9 @@ core/
   Input         keyboard/mouse sampled once per frame: IsDown / JustPressed / JustReleased
   Power         base class of every power (+ its Drain/Cost per level, PayForUse())
   Energy        the shared energy pool: drain, costs, regen, HUD bar, on/off
+  Fx            one-off particle effects from the game's effects.fxp (g_fxMan.CreateFxSystem + PlayAndKill)
+  Sound         synthesized sounds (noise + filters + envelopes -> in-memory WAV), played through
+                BASS (bass.dll, shipped with CLEO, loaded at runtime); PlaySound fallback
   PowerManager  owns the powers: on/off, levels, exclusive groups, optional hotkeys,
                 per-frame updates, switch-off on death, top-right power list
   Menu          F10 power menu (arrows / Enter / Backspace)

@@ -3,7 +3,9 @@
 
 #include "core/Config.h"
 #include "core/Energy.h"
+#include "core/Fx.h"
 #include "core/Input.h"
+#include "core/Sound.h"
 #include "core/Log.h"
 #include "core/Menu.h"
 #include "core/PowerManager.h"
@@ -67,6 +69,8 @@ public:
 
         Config config;
         config.Load(paths::GetPluginDirRelativePathA("ArmageddonPlus.ini"));
+        Fx::LoadConfig(config);
+        Sound::LoadConfig(config); // synthesizes the sounds (a few ms)
         g_powers.LoadConfig(config);
         g_menu.LoadConfig(config);
 

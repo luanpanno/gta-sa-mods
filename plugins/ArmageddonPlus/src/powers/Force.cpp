@@ -1,6 +1,8 @@
 #include "powers/Force.h"
 
 #include "core/Config.h"
+#include "core/Fx.h"
+#include "core/Sound.h"
 #include "core/Input.h"
 #include "core/Log.h"
 
@@ -93,6 +95,13 @@ void Force::Blast(CPlayerPed* player, bool pull) {
     for (int i = 0; i < objects->m_nSize; ++i)
         if (CObject* object = objects->GetAt(i))
             affect(object);
+
+    // feedback: a dust shockwave in front of CJ + whoosh (outward for push, inward for pull)
+    CVector ground;
+    CVector front = center + forward * (pull ? radius * 0.5f : 3.0f);
+    if (Fx::GroundBelow(front, 4.0f, ground))
+        Fx::Spawn("wallbust", ground);
+    Sound::Play(pull ? Sound::WhooshIn : Sound::Whoosh, 0.6f + 0.2f * lvl);
 
     m_cooldownLeft = m_cooldown;
     Log::Info("Force %s hit %d things", pull ? "pull" : "push", count);

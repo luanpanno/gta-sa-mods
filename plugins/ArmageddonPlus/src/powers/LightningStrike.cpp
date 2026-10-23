@@ -1,6 +1,7 @@
 #include "powers/LightningStrike.h"
 
 #include "core/Config.h"
+#include "core/Sound.h"
 #include "core/Input.h"
 #include "core/Log.h"
 
@@ -112,6 +113,7 @@ void LightningStrike::Strike(CPlayerPed* player) {
     }
     m_hasBolt = true;
     m_lastStrikeMs = NowMs();
+    Sound::Play(Sound::Thunder, 0.6f + 0.2f * (Level() - 1));
     Log::Info("Lightning strike (level %d)", Level());
 }
 

@@ -1,7 +1,9 @@
 #include "powers/Flight.h"
 
 #include "core/Config.h"
+#include "core/Fx.h"
 #include "core/Input.h"
+#include "core/Sound.h"
 
 #include "plugin.h"
 #include "CCamera.h"
@@ -79,6 +81,19 @@ void Flight::Update(CPlayerPed* player, float dt) {
         if (player->bIsStanding)
             player->SetPosn(pos.x, pos.y, pos.z + 0.5f);
         m_flying = true;
+        Sound::Play(Sound::Whoosh, 0.8f);
+        CVector ground;
+        if (Fx::GroundBelow(pos, 3.0f, ground))
+            Fx::Spawn("heli_dust", ground);
+    }
+
+    // downdraft: dust kicked up under CJ while he flies low (like a helicopter)
+    m_dustTimer -= dt;
+    if (m_dustTimer <= 0.0f) {
+        m_dustTimer = 0.35f;
+        CVector ground;
+        if (Fx::GroundBelow(player->GetPosition(), 8.0f, ground))
+            Fx::Spawn("heli_dust", ground);
     }
     player->bApplyGravity = false; // re-applied every frame, the game can reset it
     player->bCollisionProof = true;

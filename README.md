@@ -136,10 +136,10 @@ All power tuning lives in [config/ArmageddonPlus.ini](config/ArmageddonPlus.ini)
 - [x] **Phase 1: CLEO.** Hello world, vehicle spawner, command console, quality-of-life toggles.
 - [x] **Phase 2: C++ foundation.** plugin-sdk, hello `.asi`, power framework (config, input, levels, overlay).
 - [x] **Phase 3: Powers.** Super speed + jump, explosion punch, flight, telekinesis, force push/pull, bullet time, lightning strike, fire trail.
-- [ ] **Phase 4: Power UX.**
+- [x] **Phase 4: Power UX.**
   - [x] In-game power menu
   - [x] Energy bar with drain / costs / regen (switchable in the menu)
-  - [ ] Visual effects and sounds
+  - [x] Visual effects (game particles) and synthesized power sounds
 - [ ] **Phase 5: Physics and world.** Gravity changes, car handling, chaos modes, NPC and police reactions.
 
 ## Documentation

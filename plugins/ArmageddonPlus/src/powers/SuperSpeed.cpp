@@ -1,6 +1,8 @@
 #include "powers/SuperSpeed.h"
 
 #include "core/Config.h"
+#include "core/Fx.h"
+#include "core/Sound.h"
 #include "core/Log.h"
 
 #include "plugin.h"
@@ -106,6 +108,7 @@ void SuperSpeed::UpdateJump(CPlayerPed* player, int lvl) {
     // take-off: was on the ground last frame, now airborne and going up
     if (m_wasStanding && !standing && player->m_vecMoveSpeed.z > kTakeOffMinZ && m_jumpSpeed[lvl] > 0.0f) {
         player->m_vecMoveSpeed.z = m_jumpSpeed[lvl];
+        Sound::Play(Sound::Whoosh, 0.5f + 0.2f * lvl);
         if (!m_inSuperJump) {
             // big jumps = big landings: no fall damage until we touch the ground again
             m_wasCollisionProof = player->bCollisionProof;
@@ -114,8 +117,13 @@ void SuperSpeed::UpdateJump(CPlayerPed* player, int lvl) {
         }
     }
 
-    if (standing && m_inSuperJump)
+    if (standing && m_inSuperJump) {
+        // landing: a burst of dust at his feet
+        CVector feet = player->GetPosition();
+        feet.z -= 1.0f;
+        Fx::Spawn("wallbust", feet);
         EndJump(player);
+    }
 
     m_wasStanding = standing;
 }

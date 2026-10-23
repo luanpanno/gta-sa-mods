@@ -1,6 +1,7 @@
 #include "powers/BulletTime.h"
 
 #include "core/Config.h"
+#include "core/Sound.h"
 
 #include "plugin.h"
 #include "common.h" // RpAnimBlendClumpGetFirstAssociation / RpAnimBlendGetNextAssociation
@@ -68,7 +69,13 @@ void BulletTime::Update(CPlayerPed* player, float) {
         RestorePlayerAnims(player);
 }
 
+void BulletTime::OnActivate(CPlayerPed*) {
+    Sound::Play(Sound::SlowDown);
+}
+
 void BulletTime::OnDeactivate(CPlayerPed* player) {
+    if (player->m_fHealth > 0.0f)
+        Sound::Play(Sound::SpeedUp);
     CTimer::ms_fTimeScale = 1.0f;
     RestorePlayerAnims(player);
 }
