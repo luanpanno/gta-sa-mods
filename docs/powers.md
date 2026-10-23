@@ -12,10 +12,37 @@ Press **F10** to open the power menu. While it's open, CJ stands still, and powe
 | Enter | Toggle the selected power on/off, or fire a one-shot power (Spawn Vehicle) |
 | Backspace or F10 | Close |
 
-The bottom of the menu also has **HUD power list** (the list in the top-right corner, active powers in green) and **Close**.
+The bottom of the menu also has:
+- **Energy system:** On/Off. Off means infinite energy.
+- **HUD power list:** the list in the top-right corner, active powers in green.
+- **Close**.
+
+## Energy
+Powers share one **energy bar** (top-right, under the watermark, 0-100).
+
+- **Toggle powers drain it** every second while they're on, and more at higher levels. When it hits 0, they switch off ("Out of energy").
+- **Actions cost a lump sum:** a punch blast, a force push/pull, a telekinesis grab, a lightning strike, a vehicle spawn. If you don't have enough, the action doesn't happen: you get an error sound and the bar flashes red.
+- **It refills by itself** (8 per second) once you haven't spent anything for 1.5 seconds. Bullet Time doesn't change the drain or refill speed.
+- A draining power needs at least 5 energy to switch on.
+- Don't like it? Turn **Energy system** off in the menu.
+
+Default costs (all tunable in the ini: `[Energy]`, plus `Drain1-3` / `Cost1-3` in each power's section):
+
+| Power | Level 1 | Level 2 | Level 3 |
+|---|---|---|---|
+| Flight | 3 /s | 5 /s | 8 /s |
+| Super Speed | 1.5 /s | 3 /s | 6 /s |
+| Fire Trail | 1.5 /s | 3 /s | 5 /s |
+| Bullet Time | 5 /s | 9 /s | 15 /s |
+| Invulnerability | 3 /s | | |
+| Explosion Punch | 5 per blast | 10 | 18 |
+| Telekinesis | 6 per grab | 10 | 15 |
+| Force Push / Pull | 10 per blast | 16 | 25 |
+| Lightning Strike | 12 per strike | 20 | 35 |
+| Spawn Vehicle | 10 per spawn | | |
 
 General rules:
-- **All powers switch off when CJ dies.**
+- **All powers switch off when CJ dies,** and draining powers switch off when the energy runs out (see [Energy](#energy)).
 - **Mouse powers:** Telekinesis, Force and Lightning Strike all use the mouse buttons, so turning one on turns the others off. While one is on, CJ can't shoot or punch. Turn it off to use weapons again.
 - **On foot only:** most powers only work on foot. Fire Trail and Invulnerability also work in vehicles.
 

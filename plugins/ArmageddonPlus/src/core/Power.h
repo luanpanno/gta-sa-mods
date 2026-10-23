@@ -42,9 +42,20 @@ public:
     int Level() const { return m_level; } // 0 when off, 1..MaxLevel() when on
     int Key() const { return m_key; }
 
+    // Energy (see core/Energy.h). Values come from the ini: Drain1..3 / Cost1..3 (or Drain / Cost).
+    static constexpr int kMaxLevels = 3;
+    float DrainPerSecond() const; // while on, at the current level
+    float CostPerUse() const;     // one action, at the current level
+    // Call before an action (a blast, a strike, a grab...). false = not enough energy: skip the action.
+    bool PayForUse() const;
+
 private:
     friend class PowerManager;
+    int LevelIndex() const; // 0-based, safe for OneShot powers (level 0)
+
     bool m_active = false;
     int m_level = 0;
     int m_key = 0;
+    float m_drain[kMaxLevels] = {};
+    float m_cost[kMaxLevels] = {};
 };

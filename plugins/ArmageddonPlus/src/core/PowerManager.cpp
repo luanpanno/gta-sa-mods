@@ -1,11 +1,13 @@
 #include "core/PowerManager.h"
 
 #include "core/Config.h"
+#include "core/Energy.h"
 #include "core/Input.h"
 #include "core/Log.h"
 
 #include "plugin.h"
 #include "CFont.h"
+#include "CMessages.h"
 #include "CPlayerPed.h"
 #include "CTimer.h"
 
@@ -22,10 +24,21 @@ void PowerManager::LoadConfig(const Config& config) {
     m_overlayEnabled = config.GetBool("Debug", "Overlay", true);
     m_overlayKey = config.GetKey("Debug", "OverlayKey", 0);
 
-    char section[64];
+    Energy::LoadConfig(config);
+
+    char section[64], key[16];
     for (auto& power : m_powers) {
         std::snprintf(section, sizeof(section), "Power.%s", power->Id());
         power->m_key = config.GetKey(section, "Key", power->DefaultKey());
+        // energy: "Drain"/"Cost" = same for every level, "Drain2"/"Cost2"... override per level
+        float drain = config.GetFloat(section, "Drain", 0.0f);
+        float cost = config.GetFloat(section, "Cost", 0.0f);
+        for (int i = 0; i < Power::kMaxLevels; ++i) {
+            std::snprintf(key, sizeof(key), "Drain%d", i + 1);
+            power->m_drain[i] = config.GetFloat(section, key, drain);
+            std::snprintf(key, sizeof(key), "Cost%d", i + 1);
+            power->m_cost[i] = config.GetFloat(section, key, cost);
+        }
         power->LoadConfig(config, section);
         Log::Info("Power %-16s key=%s", power->Id(), Config::KeyName(power->m_key));
     }
@@ -33,6 +46,9 @@ void PowerManager::LoadConfig(const Config& config) {
 
 void PowerManager::SetActive(Power& power, CPlayerPed* player, bool active) {
     if (power.m_active == active)
+        return;
+    // powers that drain energy need some in the tank to start
+    if (active && power.m_drain[0] > 0.0f && !Energy::CanStart())
         return;
     if (active && power.ExclusiveGroup()) {
         for (auto& other : m_powers)
@@ -81,6 +97,8 @@ void PowerManager::SetLevel(Power& power, CPlayerPed* player, int level) {
 }
 
 void PowerManager::Fire(Power& power, CPlayerPed* player) {
+    if (!power.PayForUse())
+        return; // not enough energy (TrySpend already gave feedback)
     power.OnActivate(player);
     Log::Info("%s fired", power.Id());
 }
@@ -106,8 +124,18 @@ void PowerManager::Update() {
 
     // CTimer::ms_fTimeStep is in "1/50th of a second" units; convert to seconds
     float dt = CTimer::ms_fTimeStep / 50.0f;
+    // real seconds, even in Bullet Time: energy shouldn't get cheaper in slow motion
+    float timeScale = CTimer::ms_fTimeScale > 0.05f ? CTimer::ms_fTimeScale : 0.05f;
+    float realDt = dt / timeScale;
+    Energy::Update(realDt);
 
     for (auto& power : m_powers) {
+        if (power->m_active && power->DrainPerSecond() > 0.0f && !Energy::Drain(power->DrainPerSecond() * realDt)) {
+            SetActive(*power, player, false);
+            static char message[64]; // static: CMessages keeps the pointer while it's on screen
+            std::snprintf(message, sizeof(message), "~r~Out of energy:~s~ %s", power->Name());
+            CMessages::AddMessageJumpQ(message, 2000, 0);
+        }
         // hotkeys are paused while the menu is open (it uses the keyboard), but powers keep running
         int key = m_hotkeysEnabled ? power->m_key : 0;
         switch (power->GetMode()) {
@@ -140,7 +168,7 @@ void PowerManager::DrawOverlay() {
     if (!m_overlayEnabled)
         return;
 
-    float y = SCREEN_COORD_TOP(32.0f);
+    float y = SCREEN_COORD_TOP(Energy::IsEnabled() ? 52.0f : 32.0f); // below the energy bar
     char line[96];
     for (auto& power : m_powers) {
         CFont::SetOrientation(ALIGN_RIGHT);

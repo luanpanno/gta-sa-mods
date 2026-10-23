@@ -25,7 +25,8 @@ core/
   Log           ArmageddonPlus.log, flushed per line (survives crashes)
   Config        reads the ini; key names ("F10", "NUMPAD5", "SHIFT") -> virtual-key codes
   Input         keyboard/mouse sampled once per frame: IsDown / JustPressed / JustReleased
-  Power         base class of every power
+  Power         base class of every power (+ its Drain/Cost per level, PayForUse())
+  Energy        the shared energy pool: drain, costs, regen, HUD bar, on/off
   PowerManager  owns the powers: on/off, levels, exclusive groups, optional hotkeys,
                 per-frame updates, switch-off on death, top-right power list
   Menu          F10 power menu (arrows / Enter / Backspace)
@@ -52,6 +53,9 @@ Every frame while the HUD draws (`drawHudEvent`): the powers' `Draw()` (screen e
 | `Update(player, dt)` | Every frame while on. `dt` = game seconds (slowed by Bullet Time) |
 | `UpdateAlways(player, dt)` | Every frame, on or off. For clean-up after switching off, e.g. Flight's landing protection |
 | `Draw()` | HUD/screen drawing while on, e.g. Bullet Time's tint, Lightning's bolt and crosshair |
+
+### Energy
+Nothing to code for a draining power: put `Drain1..3` (or `Drain`) in its ini section, and `PowerManager` drains `DrainPerSecond() × real dt` every frame while it's on, refuses to start it below `[Energy] MinToStart`, and switches it off at 0. For actions, put `Cost1..3` in the ini and guard the action with `if (PayForUse()) { ... }`. Pay only once you know the action will actually happen (after finding a target, for example). `PayForUse()` always succeeds when the energy system is off.
 
 ### Adding a power
 1. Create `src/powers/MyPower.h/.cpp`, subclass `Power`, and implement `Name()`, `Id()` and the hooks you need.

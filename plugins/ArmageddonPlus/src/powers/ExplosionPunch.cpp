@@ -85,7 +85,7 @@ void ExplosionPunch::Update(CPlayerPed* player, float dt) {
 
     m_lastHealth = std::move(health);
 
-    if (victim && m_cooldownLeft <= 0.0f) {
+    if (victim && m_cooldownLeft <= 0.0f && PayForUse()) {
         Explode(player, victim);
         Log::Info("ExplosionPunch: boom (level %d)", Level());
     }

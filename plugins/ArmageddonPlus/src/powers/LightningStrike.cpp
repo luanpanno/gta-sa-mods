@@ -94,6 +94,8 @@ void LightningStrike::Strike(CPlayerPed* player) {
     CWorld::pIgnoreEntity = nullptr;
     if (!found)
         return; // pointing at the sky
+    if (!PayForUse())
+        return; // not enough energy
 
     CVector target = hit.m_vecPoint;
     const LevelInfo& info = kLevelInfo[Level() - 1];

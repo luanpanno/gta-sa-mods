@@ -33,7 +33,7 @@ Press **F10** in game to open the power menu: **↑/↓** select, **←/→** se
 | Invulnerability | on/off | CJ and his current car can't be damaged | Automatic while on |
 | Spawn Vehicle | one-shot | Spawns a vehicle in front of CJ (Infernus by default) | Enter in the menu |
 
-Telekinesis, Force and Lightning Strike all use the mouse buttons, so only one of them can be on at a time.
+Telekinesis, Force and Lightning Strike all use the mouse buttons, so only one of them can be on at a time. Powers run on a shared **energy bar** that drains and refills; you can switch it off in the menu for infinite energy.
 
 ### CLEO scripts (learning projects)
 | Script | Key | What it does |
@@ -138,7 +138,7 @@ All power tuning lives in [config/ArmageddonPlus.ini](config/ArmageddonPlus.ini)
 - [x] **Phase 3: Powers.** Super speed + jump, explosion punch, flight, telekinesis, force push/pull, bullet time, lightning strike, fire trail.
 - [ ] **Phase 4: Power UX.**
   - [x] In-game power menu
-  - [ ] Energy bar and cooldowns (switchable in the menu)
+  - [x] Energy bar with drain / costs / regen (switchable in the menu)
   - [ ] Visual effects and sounds
 - [ ] **Phase 5: Physics and world.** Gravity changes, car handling, chaos modes, NPC and police reactions.
 

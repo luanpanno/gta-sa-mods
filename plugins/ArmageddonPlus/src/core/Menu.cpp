@@ -1,6 +1,7 @@
 #include "core/Menu.h"
 
 #include "core/Config.h"
+#include "core/Energy.h"
 #include "core/Input.h"
 #include "core/Log.h"
 #include "core/PowerManager.h"
@@ -21,7 +22,7 @@ using namespace plugin;
 namespace {
 
 // rows after the powers
-enum SettingRow { ROW_OVERLAY, ROW_CLOSE, SETTING_ROWS };
+enum SettingRow { ROW_ENERGY, ROW_OVERLAY, ROW_CLOSE, SETTING_ROWS };
 
 // layout, in plugin-sdk's reference units: pixels on a 1080-pixel-tall screen (SCREEN_COORD scales them)
 const float kLeft = 30.0f;
@@ -131,6 +132,10 @@ void Menu::Activate() {
         return;
     }
     switch (index - (int)m_powers.Count()) {
+    case ROW_ENERGY:
+        Energy::SetEnabled(!Energy::IsEnabled());
+        Sound(AE_FRONTEND_SELECT);
+        break;
     case ROW_OVERLAY:
         m_powers.SetOverlayEnabled(!m_powers.IsOverlayEnabled());
         Sound(AE_FRONTEND_SELECT);
@@ -158,6 +163,10 @@ void Menu::ChangeValue(int delta) {
         m_powers.SetLevel(power, player, level);
         Sound(AE_FRONTEND_HIGHLIGHT);
         return;
+    }
+    if (index - (int)m_powers.Count() == ROW_ENERGY) {
+        Energy::SetEnabled(delta > 0);
+        Sound(AE_FRONTEND_HIGHLIGHT);
     }
     if (index - (int)m_powers.Count() == ROW_OVERLAY) {
         m_powers.SetOverlayEnabled(delta > 0);
@@ -255,6 +264,9 @@ void Menu::Draw() {
                 std::snprintf(arrows, sizeof(arrows), "< %s >", value);
                 std::snprintf(value, sizeof(value), "%s", arrows);
             }
+        } else if (row - powerCount == ROW_ENERGY) {
+            label = "Energy system";
+            std::snprintf(value, sizeof(value), selected ? "< %s >" : "%s", Energy::IsEnabled() ? "On" : "Off (infinite)");
         } else if (row - powerCount == ROW_OVERLAY) {
             label = "HUD power list";
             std::snprintf(value, sizeof(value), selected ? "< %s >" : "%s", m_powers.IsOverlayEnabled() ? "On" : "Off");

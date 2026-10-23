@@ -109,9 +109,9 @@ void Force::Update(CPlayerPed* player, float dt) {
 
     if (m_cooldownLeft > 0.0f)
         return;
-    if (Input::JustPressed(VK_LBUTTON))
+    if (Input::JustPressed(VK_LBUTTON) && PayForUse())
         Blast(player, false);
-    else if (Input::JustPressed(VK_RBUTTON))
+    else if (Input::JustPressed(VK_RBUTTON) && PayForUse())
         Blast(player, true);
 }
 

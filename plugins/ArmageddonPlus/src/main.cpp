@@ -2,6 +2,7 @@
 // Wires the core framework (config, input, power manager, menu) to the game's events and registers the powers.
 
 #include "core/Config.h"
+#include "core/Energy.h"
 #include "core/Input.h"
 #include "core/Log.h"
 #include "core/Menu.h"
@@ -77,6 +78,7 @@ public:
         Events::drawHudEvent += [] { // every frame, while the HUD is drawn
             g_powers.DrawPowers(); // screen effects first, so text draws on top
             DrawWatermark();
+            Energy::Draw(SCREEN_COORD_RIGHT(20.0f), SCREEN_COORD_TOP(36.0f)); // under the watermark
             if (!g_menu.IsOpen())
                 g_powers.DrawOverlay(); // the menu already shows every power's state
             g_menu.Draw();

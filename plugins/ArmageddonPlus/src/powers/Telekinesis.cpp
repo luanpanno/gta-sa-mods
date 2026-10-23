@@ -209,7 +209,8 @@ void Telekinesis::Update(CPlayerPed* player, float) {
 
     if (Input::JustPressed(VK_LBUTTON) && Input::IsDown(VK_RBUTTON))
         if (CPhysical* target = FindTarget(player))
-            Grab(player, target);
+            if (PayForUse()) // only pay when there's actually something to grab
+                Grab(player, target);
 }
 
 void Telekinesis::OnDeactivate(CPlayerPed* player) {
