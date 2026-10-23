@@ -17,6 +17,7 @@ public:
 
     const char* Name() const override { return "Lightning Strike"; }
     const char* Id() const override { return "LightningStrike"; }
+    const char* Description() const override { return "Point the center crosshair and click LMB to call down lightning"; }
     int MaxLevel() const override { return kLevels; }
     const char* ExclusiveGroup() const override { return "mouse"; }
 

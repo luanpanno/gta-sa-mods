@@ -21,7 +21,6 @@ public:
     void LoadConfig(const Config& config);
 
     void Update();     // call from Events::gameProcessEvent, after Input::Update()
-    void DrawOverlay(); // call from Events::drawHudEvent
     void DrawPowers();  // active powers' own HUD/screen effects; call from Events::drawHudEvent
 
     void DeactivateAll(CPlayerPed* player);
@@ -31,13 +30,14 @@ public:
     Power& At(size_t index) { return *m_powers[index]; }
     void SetLevel(Power& power, CPlayerPed* player, int level); // 0 = off, clamped to MaxLevel()
     void Fire(Power& power, CPlayerPed* player);                // OneShot powers
+    // Bind a shortcut (0 = none). Returns the power that had this key before (now unbound), if any.
+    Power* SetKey(Power& power, int vk);
     void SetHotkeysEnabled(bool enabled) { m_hotkeysEnabled = enabled; }
     bool IsOverlayEnabled() const { return m_overlayEnabled; }
     void SetOverlayEnabled(bool enabled) { m_overlayEnabled = enabled; }
 
 private:
     void SetActive(Power& power, CPlayerPed* player, bool active);
-    void StepLevel(Power& power, CPlayerPed* player); // Toggle key press: off -> 1 -> ... -> max -> off
 
     static inline PowerManager* s_instance = nullptr;
     std::vector<std::unique_ptr<Power>> m_powers;

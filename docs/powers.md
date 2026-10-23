@@ -9,19 +9,42 @@ Press **F10** to open the power menu. While it's open, CJ stands still, and powe
 |---|---|
 | ↑ / ↓ | Select a power (hold to scroll) |
 | ← / → | Lower / raise the level: Off ↔ 1 ↔ 2 ↔ 3 |
-| Enter | Toggle the selected power on/off, or fire a one-shot power (Spawn Vehicle) |
-| Backspace or F10 | Close |
+| Enter | Toggle the selected power on/off (back on at its last level), or fire a one-shot power (Spawn Vehicle) |
+| Insert (or B) | **Bind a shortcut** to the selected power: the menu says "press a key...", and the next key you press becomes its shortcut |
+| Delete | Remove the selected power's shortcut |
+| Backspace or F10 | Close (while binding: cancel) |
+
+Each row shows a green dot when the power is on, its shortcut as a key badge (e.g. `[X]`), and its level as pips (■■□) or a level name ("Moon"). The bottom of the menu describes the selected power and lists these keys.
 
 The bottom of the menu also has:
 - **Energy system:** On/Off. Off means infinite energy.
-- **HUD power list:** the list in the top-right corner, active powers in green.
-- **Close**.
+- **HUD power list:** the list in the top-right corner.
+- **Close menu**.
+
+## Shortcuts
+Shortcuts let you switch powers on and off without opening the menu. They're most useful for the "always on" kind, like Flight, Super Speed or Bullet Time.
+
+1. Open the menu (F10), select the power, and press **Insert**.
+2. Press the key you want, e.g. **X**. The footer confirms "Flight: X".
+3. Close the menu. Now **X** turns Flight on, at the last level you used, and off again.
+
+- One key can only belong to one power. Binding a key that's already in use moves it, and the footer tells you from which power.
+- You can't bind keys the menu uses (arrows, Enter, Insert, Delete, F10), mouse buttons or **F1**. F1 makes GTA SA stop reading the keyboard.
+- Avoid keys the game uses on foot or in cars (W/A/S/D, F, Space, C, Tab, Q/E...). Good picks: X, Z, V, G, the number keys, the numpad.
+- Shortcuts and the two menu settings are saved to `C:\Games\GTA-SA-Modding\ArmageddonPlus.user.ini`. Deploys never overwrite it, and you can delete it to reset everything.
+
+## The HUD
+- **Top-right:** the **Armageddon+** title and the power list below.
+- **Energy bar** (bottom center, when the energy system is on; also visible while the menu is open): it turns orange below 25%, and flashes red when you try something you can't afford.
+- **Power list:** powers that are **on** (bright, with their level) and powers that have a **shortcut** (dimmed, with their key badge). Powers with neither are hidden, to keep the screen clean. You can switch the list off in the menu.
+- The top-right part hides while the menu is open, because the menu shows the same information.
+- Everything (menu and HUD) scales with `[Menu] Scale` in the ini: 1.0 is the default, and you can try 1.2 on a big screen.
 
 ## Energy
-Powers share one **energy bar** (top-right, under the watermark, 0-100).
+Powers share one **energy bar** (bottom center of the screen, 0-100).
 
 - **Toggle powers drain it** every second while they're on, and more at higher levels. When it hits 0, they switch off ("Out of energy").
-- **Actions cost a lump sum:** a punch blast, a force push/pull, a telekinesis grab, a lightning strike, a vehicle spawn. If you don't have enough, the action doesn't happen: you get an error sound and the bar flashes red.
+- **Actions cost a lump sum:** a punch blast, a force push/pull, a telekinesis grab, a lightning strike. Spawn tools are free. If you don't have enough, the action doesn't happen: you get an error sound and the bar flashes red.
 - **It refills by itself** (8 per second) once you haven't spent anything for 1.5 seconds. Bullet Time doesn't change the drain or refill speed.
 - A draining power needs at least 5 energy to switch on.
 - Don't like it? Turn **Energy system** off in the menu.
@@ -39,7 +62,6 @@ Default costs (all tunable in the ini: `[Energy]`, plus `Drain1-3` / `Cost1-3` i
 | Telekinesis | 6 per grab | 10 | 15 |
 | Force Push / Pull | 10 per blast | 16 | 25 |
 | Lightning Strike | 12 per strike | 20 | 35 |
-| Spawn Vehicle | 10 per spawn | | |
 
 General rules:
 - **All powers switch off when CJ dies,** and draining powers switch off when the energy runs out (see [Energy](#energy)).
@@ -192,10 +214,19 @@ The whole world slows down, and CJ keeps moving at normal speed. A light blue ti
 ## Invulnerability
 CJ, and the vehicle he's in, can't be damaged: bullets, fire, explosions, crashes or melee. His health stays full. A car he gets out of goes back to normal.
 
-## Spawn Vehicle
-One-shot: select it in the menu and press **Enter**. A vehicle appears 6 m in front of CJ. It doesn't work inside interiors.
-- ini: `Model` (400-611, e.g. 411 Infernus, 520 Hydra, 432 Rhino, 425 Hunter).
+# Spawn tools
+The **SPAWN** section of the menu: **←/→** choose (hold **Shift** to move 10 at a time), **Enter** uses. They don't cost energy.
 
+## Spawn Vehicle
+Every spawnable vehicle in the game (about 200: cars, bikes, boats, planes, helicopters, trailers), listed with its in-game name and model ID, e.g. `Infernus  411`. The list comes from the game's own data, so it's always complete. Trains and RC toys are excluded. **Enter** spawns the selected vehicle 8 m in front of CJ. This doesn't work inside interiors.
+- ini: `Model` = the vehicle selected when the game starts.
+
+## Give Weapon
+Every weapon CJ can hold, from brass knuckles to the minigun, plus the parachute, night vision and so on. **Enter** gives it with 500 ammo (melee weapons: 1) and makes it CJ's current weapon. Satchel charges come with their detonator.
+- ini: `Weapon` (selected at startup, weapon type ID), `Ammo`.
+
+## Add Money
+**←/→** picks $1,000 / $10,000 / $100,000 / $1,000,000 / $10,000,000, and **Enter** adds it. The HUD money counter rolls up like after a mission. It's capped at $999,999,999, the most the HUD can show.
 ---
 
 # World mods

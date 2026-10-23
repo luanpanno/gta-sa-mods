@@ -19,6 +19,7 @@ public:
 
     const char* Name() const override { return "Bullet Time"; }
     const char* Id() const override { return "BulletTime"; }
+    const char* Description() const override { return "The world slows down, CJ keeps moving at normal speed"; }
     int MaxLevel() const override { return kLevels; }
 
     void LoadConfig(const Config& config, const char* section) override;

@@ -26,6 +26,7 @@ public:
 
     const char* Name() const override { return "Flight"; }
     const char* Id() const override { return "Flight"; }
+    const char* Description() const override { return "W/S fly where the camera looks, A/D strafe, Space/C up/down, no keys = hover"; }
     int MaxLevel() const override { return kLevels; }
 
     void LoadConfig(const Config& config, const char* section) override;

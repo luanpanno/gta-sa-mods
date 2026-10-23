@@ -25,6 +25,7 @@ public:
 
     const char* Name() const override { return "Telekinesis"; }
     const char* Id() const override { return "Telekinesis"; }
+    const char* Description() const override { return "Aim (RMB) + click (LMB) to grab, hold to carry, release to throw"; }
     int MaxLevel() const override { return kLevels; }
     const char* ExclusiveGroup() const override { return "mouse"; }
 

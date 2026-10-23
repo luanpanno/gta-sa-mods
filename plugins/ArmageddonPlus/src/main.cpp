@@ -4,12 +4,17 @@
 #include "core/Config.h"
 #include "core/Energy.h"
 #include "core/Fx.h"
+#include "core/Hud.h"
 #include "core/Input.h"
+#include "core/Ui.h"
+#include "core/UserSettings.h"
 #include "core/Sound.h"
 #include "core/Log.h"
 #include "core/Menu.h"
 #include "core/PowerManager.h"
+#include "powers/AddMoney.h"
 #include "powers/BulletTime.h"
+#include "powers/GiveWeapon.h"
 #include "powers/ExplosionPunch.h"
 #include "powers/FireTrail.h"
 #include "powers/LightningStrike.h"
@@ -37,17 +42,10 @@ namespace {
 PowerManager g_powers;
 Menu g_menu(g_powers);
 
-void DrawWatermark() {
-    CFont::SetOrientation(ALIGN_RIGHT);
-    CFont::SetRightJustifyWrap(0.0f);
-    CFont::SetFontStyle(FONT_SUBTITLES);
-    CFont::SetProportional(true);
-    CFont::SetBackground(false, false);
-    CFont::SetScale(SCREEN_MULTIPLIER(0.5f), SCREEN_MULTIPLIER(1.0f));
-    CFont::SetColor(CRGBA(255, 160, 0, 255));
-    CFont::SetDropShadowPosition(1);
-    CFont::SetDropColor(CRGBA(0, 0, 0, 255));
-    CFont::PrintString(SCREEN_COORD_RIGHT(20.0f), SCREEN_COORD_TOP(10.0f), "ArmageddonPlus");
+// real seconds this frame (the menu shouldn't slow down in Bullet Time)
+float RealDt() {
+    float timeScale = CTimer::ms_fTimeScale > 0.05f ? CTimer::ms_fTimeScale : 0.05f;
+    return CTimer::ms_fTimeStep / 50.0f / timeScale;
 }
 
 } // namespace
@@ -69,7 +67,10 @@ public:
         g_powers.Register(std::make_unique<FireTrail>());
         g_powers.Register(std::make_unique<BulletTime>()); // after the others: it speeds up CJ's anims as they are
         g_powers.Register(std::make_unique<Invulnerability>());
+        // spawning tools (own "Spawn" section in the menu): Left/Right pick, Enter use
         g_powers.Register(std::make_unique<SpawnVehicle>());
+        g_powers.Register(std::make_unique<GiveWeapon>());
+        g_powers.Register(std::make_unique<AddMoney>());
         // world mods (own "World" section in the menu)
         g_powers.Register(std::make_unique<Gravity>());
         g_powers.Register(std::make_unique<VehicleHandling>());
@@ -78,22 +79,23 @@ public:
 
         Config config;
         config.Load(paths::GetPluginDirRelativePathA("ArmageddonPlus.ini"));
+        Ui::LoadConfig(config);
         Fx::LoadConfig(config);
         Sound::LoadConfig(config); // synthesizes the sounds (a few ms)
         g_powers.LoadConfig(config);
         g_menu.LoadConfig(config);
+        UserSettings::Apply(g_powers); // your shortcuts and toggles (ArmageddonPlus.user.ini) win
 
         Events::gameProcessEvent += [] { // every game frame (logic)
             Input::Update();
-            g_menu.Update(CTimer::ms_fTimeStep / 50.0f); // before powers: it pauses their hotkeys
+            g_menu.Update(RealDt()); // before powers: it pauses their shortcuts
             g_powers.Update();
         };
         Events::drawHudEvent += [] { // every frame, while the HUD is drawn
-            g_powers.DrawPowers(); // screen effects first, so text draws on top
-            DrawWatermark();
-            Energy::Draw(SCREEN_COORD_RIGHT(20.0f), SCREEN_COORD_TOP(36.0f)); // under the watermark
+            g_powers.DrawPowers(); // screen effects first, so the HUD draws on top
             if (!g_menu.IsOpen())
-                g_powers.DrawOverlay(); // the menu already shows every power's state
+                Hud::Draw(g_powers); // the menu already shows everything
+            Hud::DrawEnergy();       // bottom center, also while the menu is open
             g_menu.Draw();
         };
     }

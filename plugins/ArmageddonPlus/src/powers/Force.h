@@ -17,6 +17,7 @@ public:
 
     const char* Name() const override { return "Force Push / Pull"; }
     const char* Id() const override { return "Force"; }
+    const char* Description() const override { return "LMB pushes everything in front away, RMB pulls it toward you"; }
     int MaxLevel() const override { return kLevels; }
     const char* ExclusiveGroup() const override { return "mouse"; }
 

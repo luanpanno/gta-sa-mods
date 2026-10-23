@@ -25,6 +25,6 @@ bool TrySpend(float amount);            // pay for an action; false (+ error fee
 bool Drain(float amount);               // continuous drain; false when empty
 bool CanStart();                        // enough to switch a power on
 
-void Draw(float rightX, float topY);    // the bar (top-right, under the watermark)
+bool IsFailFlashing();                  // true briefly after a failed spend (the HUD bar flashes red)
 
 } // namespace Energy

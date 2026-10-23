@@ -19,6 +19,7 @@ public:
 
     const char* Name() const override { return "Explosion Punch"; }
     const char* Id() const override { return "ExplosionPunch"; }
+    const char* Description() const override { return "Melee hits make people and cars explode"; }
     int MaxLevel() const override { return kLevels; }
 
     void LoadConfig(const Config& config, const char* section) override;

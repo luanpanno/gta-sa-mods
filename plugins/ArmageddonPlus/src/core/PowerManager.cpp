@@ -63,6 +63,8 @@ void PowerManager::SetActive(Power& power, CPlayerPed* player, bool active) {
                 std::strcmp(other->ExclusiveGroup(), power.ExclusiveGroup()) == 0)
                 SetActive(*other, player, false);
     }
+    if (!active && power.m_level > 0)
+        power.m_lastLevel = power.m_level; // remembered for the shortcut key
     power.m_active = active;
     power.m_level = active ? 1 : 0;
     if (active) {
@@ -72,18 +74,6 @@ void PowerManager::SetActive(Power& power, CPlayerPed* player, bool active) {
         power.OnDeactivate(player);
     }
     Log::Info("%s %s", power.Id(), active ? "ON" : "OFF");
-}
-
-void PowerManager::StepLevel(Power& power, CPlayerPed* player) {
-    if (!power.m_active) {
-        SetActive(power, player, true); // off -> level 1
-    } else if (power.m_level < power.MaxLevel()) {
-        power.m_level++;
-        power.OnLevelChanged(player, power.m_level);
-        Log::Info("%s level %d", power.Id(), power.m_level);
-    } else {
-        SetActive(power, player, false); // max level -> off
-    }
 }
 
 void PowerManager::SetLevel(Power& power, CPlayerPed* player, int level) {
@@ -101,6 +91,19 @@ void PowerManager::SetLevel(Power& power, CPlayerPed* player, int level) {
         power.OnLevelChanged(player, level);
         Log::Info("%s level %d", power.Id(), level);
     }
+}
+
+Power* PowerManager::SetKey(Power& power, int vk) {
+    Power* previousOwner = nullptr;
+    if (vk) {
+        for (auto& other : m_powers)
+            if (other.get() != &power && other->m_key == vk) {
+                other->m_key = 0; // one key, one power
+                previousOwner = other.get();
+            }
+    }
+    power.m_key = vk;
+    return previousOwner;
 }
 
 void PowerManager::Fire(Power& power, CPlayerPed* player) {
@@ -147,8 +150,9 @@ void PowerManager::Update() {
         int key = m_hotkeysEnabled ? power->m_key : 0;
         switch (power->GetMode()) {
         case Power::Mode::Toggle:
+            // shortcut: on (at the last level used) / off. Levels are picked in the menu.
             if (Input::JustPressed(key))
-                StepLevel(*power, player);
+                SetLevel(*power, player, power->m_active ? 0 : power->m_lastLevel);
             break;
         case Power::Mode::Hold:
             if (m_hotkeysEnabled)
@@ -169,35 +173,4 @@ void PowerManager::DrawPowers() {
     for (auto& power : m_powers)
         if (power->m_active)
             power->Draw();
-}
-
-void PowerManager::DrawOverlay() {
-    if (!m_overlayEnabled)
-        return;
-
-    float y = SCREEN_COORD_TOP(Energy::IsEnabled() ? 52.0f : 32.0f); // below the energy bar
-    char line[96];
-    for (auto& power : m_powers) {
-        CFont::SetOrientation(ALIGN_RIGHT);
-        CFont::SetRightJustifyWrap(0.0f);
-        CFont::SetFontStyle(FONT_SUBTITLES);
-        CFont::SetProportional(true);
-        CFont::SetBackground(false, false);
-        CFont::SetScale(SCREEN_MULTIPLIER(0.35f), SCREEN_MULTIPLIER(0.8f));
-        CFont::SetDropShadowPosition(1);
-        CFont::SetDropColor(CRGBA(0, 0, 0, 255));
-        CFont::SetColor(power->m_active ? CRGBA(120, 255, 120, 255) : CRGBA(200, 200, 200, 200));
-
-        char key[24] = "";
-        if (power->m_key) // only powers with an optional hotkey (Key= in the ini) show it
-            std::snprintf(key, sizeof(key), "[%s] ", Config::KeyName(power->m_key));
-        if (power->m_active && power->LevelName(power->m_level))
-            std::snprintf(line, sizeof(line), "%s%s: %s", key, power->Name(), power->LevelName(power->m_level));
-        else if (power->MaxLevel() > 1 && power->m_active)
-            std::snprintf(line, sizeof(line), "%s%s %d/%d", key, power->Name(), power->m_level, power->MaxLevel());
-        else
-            std::snprintf(line, sizeof(line), "%s%s", key, power->Name());
-        CFont::PrintString(SCREEN_COORD_RIGHT(20.0f), y, line);
-        y += SCREEN_COORD(16.0f);
-    }
 }

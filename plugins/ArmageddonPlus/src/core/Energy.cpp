@@ -110,38 +110,8 @@ bool CanStart() {
     return false;
 }
 
-void Draw(float rightX, float topY) {
-    if (!g_enabled)
-        return;
-
-    float width = SCREEN_COORD(150.0f), height = SCREEN_COORD(9.0f), border = SCREEN_COORD(2.0f);
-    float left = rightX - width;
-    float fraction = g_max > 0.0f ? g_current / g_max : 0.0f;
-
-    // fill color: blue, orange when low, flashing red after a failed spend
-    CRGBA fill(70, 150, 255, 230);
-    if (fraction < 0.25f)
-        fill = CRGBA(255, 150, 40, 230);
-    if (NowMs() < g_failFlashUntil && (NowMs() / 100) % 2 == 0)
-        fill = CRGBA(255, 40, 40, 255);
-
-    CSprite2d::DrawRect(CRect(left - border, topY - border, rightX + border, topY + height + border), CRGBA(0, 0, 0, 200));
-    CSprite2d::DrawRect(CRect(left, topY, rightX, topY + height), CRGBA(40, 40, 60, 200));
-    if (fraction > 0.0f)
-        CSprite2d::DrawRect(CRect(left, topY, left + width * fraction, topY + height), fill);
-
-    char text[16];
-    std::snprintf(text, sizeof(text), "%d", (int)std::ceil(g_current));
-    CFont::SetOrientation(ALIGN_RIGHT);
-    CFont::SetRightJustifyWrap(0.0f);
-    CFont::SetFontStyle(FONT_SUBTITLES);
-    CFont::SetProportional(true);
-    CFont::SetBackground(false, false);
-    CFont::SetScale(SCREEN_MULTIPLIER(0.3f), SCREEN_MULTIPLIER(0.7f));
-    CFont::SetDropShadowPosition(1);
-    CFont::SetDropColor(CRGBA(0, 0, 0, 255));
-    CFont::SetColor(CRGBA(255, 255, 255, 255));
-    CFont::PrintString(left - SCREEN_COORD(6.0f), topY - SCREEN_COORD(3.0f), text);
+bool IsFailFlashing() {
+    return NowMs() < g_failFlashUntil && (NowMs() / 100) % 2 == 0;
 }
 
 } // namespace Energy

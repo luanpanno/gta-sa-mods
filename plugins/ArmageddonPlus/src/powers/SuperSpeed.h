@@ -18,6 +18,7 @@ public:
 
     const char* Name() const override { return "Super Speed"; }
     const char* Id() const override { return "SuperSpeed"; }
+    const char* Description() const override { return "Run much faster and jump much higher, no fall damage from super jumps"; }
     int MaxLevel() const override { return kLevels; }
 
     void LoadConfig(const Config& config, const char* section) override;

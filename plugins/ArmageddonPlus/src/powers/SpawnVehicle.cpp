@@ -17,6 +17,8 @@
 #include "CTheScripts.h"
 #include "CTrailer.h"
 #include "CTrain.h"
+#include "CText.h"
+#include "CVehicleModelInfo.h"
 #include "CWorld.h"
 
 #include <cstdio>
@@ -89,7 +91,49 @@ CVehicle* CreateVehicle(int modelIndex, CVector position, float heading) {
 } // namespace
 
 void SpawnVehicle::LoadConfig(const Config& config, const char* section) {
-    m_model = config.GetInt(section, "Model", 411);
+    m_startModel = config.GetInt(section, "Model", 411);
+}
+
+void SpawnVehicle::BuildList() const {
+    if (!m_models.empty())
+        return; // built on first use: model info and texts only exist once the game has loaded
+    for (int id = 400; id <= 611; ++id) {
+        auto info = CModelInfo::GetModelInfo(id);
+        if (!info || info->GetModelType() != MODEL_INFO_VEHICLE)
+            continue;
+        auto vehicleInfo = reinterpret_cast<CVehicleModelInfo*>(info);
+        switch (vehicleInfo->m_nVehicleType) {
+        case VEHICLE_TRAIN: case VEHICLE_FHELI: case VEHICLE_FPLANE:
+            continue; // trains need tracks; RC toys can't be driven by CJ
+        default:
+            break;
+        }
+        // display name: the game's text for the model's GXT key (e.g. "INFERNU" -> "Infernus")
+        const char* text = TheText.Get(vehicleInfo->m_szGameName);
+        std::string name = (text && *text) ? text : vehicleInfo->m_szGameName;
+        m_models.push_back(id);
+        m_names.push_back(name);
+        if (id == m_startModel)
+            m_index = (int)m_models.size() - 1;
+    }
+    Log::Info("SpawnVehicle: %d spawnable vehicles", (int)m_models.size());
+}
+
+const char* SpawnVehicle::PickerValue() const {
+    BuildList();
+    if (m_models.empty())
+        return "-";
+    static char text[64];
+    std::snprintf(text, sizeof(text), "%s  %d", m_names[m_index].c_str(), m_models[m_index]);
+    return text;
+}
+
+void SpawnVehicle::PickerStep(int delta) {
+    BuildList();
+    int count = (int)m_models.size();
+    if (count == 0)
+        return;
+    m_index = ((m_index + delta) % count + count) % count; // wrap around both ways
 }
 
 void SpawnVehicle::OnActivate(CPlayerPed* player) {
@@ -99,21 +143,20 @@ void SpawnVehicle::OnActivate(CPlayerPed* player) {
         CMessages::AddMessageJumpQ("~r~Can't spawn vehicles inside interiors", 3000, 0);
         return;
     }
-    if (m_model < 400 || m_model > 611) {
-        std::snprintf(message, sizeof(message), "~r~Invalid vehicle model %d (400-611)", m_model);
-        CMessages::AddMessageJumpQ(message, 3000, 0);
+    BuildList();
+    if (m_models.empty())
         return;
-    }
+    int model = m_models[m_index];
 
-    // 6 m in front of CJ (x = right, y = forward, z = up, relative to CJ)
-    CVector position = player->TransformFromObjectSpace(CVector(0.0f, 6.0f, 0.0f));
-    CVehicle* vehicle = CreateVehicle(m_model, position, player->m_fHeadingCurrent);
+    // 6 m in front of CJ (x = right, y = forward, z = up, relative to CJ); bigger for planes/boats
+    CVector position = player->TransformFromObjectSpace(CVector(0.0f, 8.0f, 0.0f));
+    CVehicle* vehicle = CreateVehicle(model, position, player->m_fHeadingCurrent);
 
     if (!vehicle) {
-        std::snprintf(message, sizeof(message), "~r~Failed to spawn model %d", m_model);
-        Log::Info("SpawnVehicle: failed for model %d", m_model);
+        std::snprintf(message, sizeof(message), "~r~Failed to spawn %s", m_names[m_index].c_str());
+        Log::Info("SpawnVehicle: failed for model %d", model);
     } else {
-        std::snprintf(message, sizeof(message), "Spawned vehicle ~y~%d", m_model);
+        std::snprintf(message, sizeof(message), "Spawned ~y~%s", m_names[m_index].c_str());
     }
     CMessages::AddMessageJumpQ(message, 2000, 0);
 }

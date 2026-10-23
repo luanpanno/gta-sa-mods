@@ -32,7 +32,10 @@ core/
                 BASS (bass.dll, shipped with CLEO, loaded at runtime); PlaySound fallback
   PowerManager  owns the powers: on/off, levels, exclusive groups, optional hotkeys,
                 per-frame updates, switch-off on death, top-right power list
-  Menu          F10 power menu (arrows / Enter / Backspace)
+  Menu          F10 power menu (arrows / Enter / Backspace), shortcut binding (Insert / Delete)
+  Hud           top-right block: title, energy bar, list of active / shortcut-bound powers
+  Ui            drawing toolkit: rects, gradients, text, key badges, level pips (1080p reference units × Scale)
+  UserSettings  ArmageddonPlus.user.ini in the game folder: shortcuts + menu toggles (never overwritten by deploy)
 powers/         one class per superpower (Category "Powers")
 world/          world mods: Gravity, VehicleHandling, Chaos, Reactions (Category "World")
 ```
@@ -52,6 +55,7 @@ Every frame while the HUD draws (`drawHudEvent`): the powers' `Draw()` (screen e
 | `MaxLevel()` | > 1 gives levels: the menu's ←/→ pick Off/1/2/3; `Level()` returns the current one |
 | `Category()` | Menu section: `"Powers"` (default) or `"World"`. A header is drawn where the category changes |
 | `LevelName(level)` | Optional name shown instead of "Level 2/3", e.g. "Moon" |
+| `Description()` | One line shown in the menu footer when the power is selected |
 | `ExclusiveGroup()` | Powers with the same group string can't be on together (`"mouse"`: Telekinesis, Force, Lightning Strike) |
 | `LoadConfig(config, section)` | Read tuning values once at startup |
 | `OnActivate` / `OnDeactivate` | Turned on / off (also off when CJ dies). OneShot: `OnActivate` = fire |

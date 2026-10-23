@@ -17,6 +17,7 @@ public:
 
     const char* Name() const override { return "Fire Trail"; }
     const char* Id() const override { return "FireTrail"; }
+    const char* Description() const override { return "Leave a trail of fire on foot or behind your car; you are fireproof"; }
     int MaxLevel() const override { return kLevels; }
 
     void LoadConfig(const Config& config, const char* section) override;

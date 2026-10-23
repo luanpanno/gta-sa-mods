@@ -13,6 +13,7 @@ public:
 
     const char* Name() const override { return "Gravity"; }
     const char* Id() const override { return "Gravity"; }
+    const char* Description() const override { return "Gravity for everything: people, cars, objects"; }
     const char* Category() const override { return "World"; }
     int MaxLevel() const override { return kLevels; }
     const char* LevelName(int level) const override;

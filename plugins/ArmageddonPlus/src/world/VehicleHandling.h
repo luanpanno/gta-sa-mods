@@ -20,6 +20,7 @@ public:
 
     const char* Name() const override { return "Vehicle Handling"; }
     const char* Id() const override { return "VehicleHandling"; }
+    const char* Description() const override { return "While driving: hold Shift = turbo, J = jump; extra grip, burst-proof tyres"; }
     const char* Category() const override { return "World"; }
     int MaxLevel() const override { return kLevels; }
     const char* LevelName(int level) const override;

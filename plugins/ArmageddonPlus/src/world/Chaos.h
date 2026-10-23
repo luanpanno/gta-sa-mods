@@ -18,6 +18,7 @@ public:
 
     const char* Name() const override { return "Chaos"; }
     const char* Id() const override { return "Chaos"; }
+    const char* Description() const override { return "Random mayhem around CJ; mission vehicles are spared"; }
     const char* Category() const override { return "World"; }
     int MaxLevel() const override { return kLevels; }
     const char* LevelName(int level) const override;

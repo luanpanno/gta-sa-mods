@@ -5,18 +5,18 @@
 #include "core/Input.h"
 #include "core/Log.h"
 #include "core/PowerManager.h"
+#include "core/Ui.h"
+#include "core/UserSettings.h"
 
 #include "plugin.h"
 #include "CAudioEngine.h"
-#include "CFont.h"
-#include "CPad.h"
 #include "CPlayerPed.h"
-#include "CRect.h"
-#include "CSprite2d.h"
 #include "extensions/ScriptCommands.h"
 
+#include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 using namespace plugin;
 
@@ -25,13 +25,17 @@ namespace {
 // rows after the powers
 enum SettingRow { ROW_ENERGY, ROW_OVERLAY, ROW_CLOSE, SETTING_ROWS };
 
-// layout, in plugin-sdk's reference units: pixels on a 1080-pixel-tall screen (SCREEN_COORD scales them)
-const float kLeft = 30.0f;
-const float kWidth = 260.0f;
-const float kTop = 90.0f;
-const float kTitleHeight = 28.0f;
-const float kRowHeight = 18.0f;
-const float kPadding = 8.0f;
+// layout, in Ui reference units (pixels on a 1080-pixel-tall screen, times [Menu] Scale)
+const float kLeft = 48.0f;
+const float kWidth = 500.0f;
+const float kTop = 60.0f;
+const float kHeaderHeight = 66.0f;
+const float kRowHeight = 34.0f;
+const float kSectionHeight = 30.0f;
+const float kPad = 16.0f;
+const float kTextSize = 26.0f;     // row text
+const float kSmallSize = 20.0f;    // badges, hints
+const float kFooterHeight = 140.0f;
 
 const float kRepeatDelay = 0.40f; // hold an arrow this long before it starts repeating
 const float kRepeatRate = 0.10f;  // then one step every this many seconds
@@ -40,20 +44,12 @@ void Sound(int event) {
     AudioEngine.ReportFrontendAudioEvent(event, 0.0f, 1.0f);
 }
 
-void SetupText(float scaleX, float scaleY, CRGBA color, eFontAlignment align) {
-    CFont::SetOrientation(align);
-    CFont::SetWrapx(SCREEN_COORD(640.0f));
-    CFont::SetRightJustifyWrap(0.0f);
-    CFont::SetProportional(true);
-    CFont::SetBackground(false, false);
-    CFont::SetScale(SCREEN_MULTIPLIER(scaleX), SCREEN_MULTIPLIER(scaleY));
-    CFont::SetColor(color);
-    CFont::SetDropShadowPosition(1);
-    CFont::SetDropColor(CRGBA(0, 0, 0, 255));
+bool IsMouseButton(int vk) {
+    return vk == VK_LBUTTON || vk == VK_RBUTTON || vk == VK_MBUTTON || vk == VK_XBUTTON1 || vk == VK_XBUTTON2;
 }
 
-void Rect(float x1, float y1, float x2, float y2, CRGBA color) {
-    CSprite2d::DrawRect(CRect(SCREEN_COORD(x1), SCREEN_COORD(y1), SCREEN_COORD(x2), SCREEN_COORD(y2)), color);
+bool IsSideSpecificModifier(int vk) {
+    return vk >= VK_LSHIFT && vk <= VK_RMENU; // we bind the generic SHIFT/CTRL/ALT instead
 }
 
 } // namespace
@@ -71,6 +67,11 @@ int Menu::ItemCount() const {
     return (int)m_powers.Count() + SETTING_ROWS;
 }
 
+void Menu::Notice(const std::string& text) {
+    m_notice = text;
+    m_noticeTime = 2.5f;
+}
+
 void Menu::Open() {
     CPlayerPed* player = FindPlayerPed();
     if (!player || player->m_fHealth <= 0.0f)
@@ -81,6 +82,7 @@ void Menu::Open() {
         return;
     }
     m_open = true;
+    m_binding = false;
     // No walking/driving with the arrows, no Enter = enter car. Same game command as
     // CLEO's set_player_control (opcode 01B4).
     Command<Commands::SET_PLAYER_CONTROL>(0, false);
@@ -90,6 +92,7 @@ void Menu::Open() {
 
 void Menu::Close() {
     m_open = false;
+    m_binding = false;
     Command<Commands::SET_PLAYER_CONTROL>(0, true);
     m_powers.SetHotkeysEnabled(true);
     Sound(AE_FRONTEND_BACK);
@@ -119,7 +122,7 @@ void Menu::Activate() {
         Power& power = m_powers.At(index);
         switch (power.GetMode()) {
         case Power::Mode::Toggle:
-            m_powers.SetLevel(power, player, power.IsActive() ? 0 : 1);
+            m_powers.SetLevel(power, player, power.IsActive() ? 0 : power.LastLevel());
             Sound(AE_FRONTEND_SELECT);
             break;
         case Power::Mode::OneShot:
@@ -134,12 +137,10 @@ void Menu::Activate() {
     }
     switch (index - (int)m_powers.Count()) {
     case ROW_ENERGY:
-        Energy::SetEnabled(!Energy::IsEnabled());
-        Sound(AE_FRONTEND_SELECT);
+        ChangeValue(Energy::IsEnabled() ? -1 : +1);
         break;
     case ROW_OVERLAY:
-        m_powers.SetOverlayEnabled(!m_powers.IsOverlayEnabled());
-        Sound(AE_FRONTEND_SELECT);
+        ChangeValue(m_powers.IsOverlayEnabled() ? -1 : +1);
         break;
     case ROW_CLOSE:
         Close();
@@ -152,6 +153,12 @@ void Menu::ChangeValue(int delta) {
     int index = m_selected;
     if (index < (int)m_powers.Count()) {
         Power& power = m_powers.At(index);
+        if (power.HasPicker()) {
+            // Shift = big steps (e.g. 10 vehicles at a time)
+            power.PickerStep(Input::IsDown(VK_SHIFT) ? delta * 10 : delta);
+            Sound(AE_FRONTEND_HIGHLIGHT);
+            return;
+        }
         if (power.GetMode() != Power::Mode::Toggle) {
             Sound(AE_FRONTEND_ERROR);
             return;
@@ -165,17 +172,66 @@ void Menu::ChangeValue(int delta) {
         Sound(AE_FRONTEND_HIGHLIGHT);
         return;
     }
-    if (index - (int)m_powers.Count() == ROW_ENERGY) {
+    switch (index - (int)m_powers.Count()) {
+    case ROW_ENERGY:
         Energy::SetEnabled(delta > 0);
+        UserSettings::SaveEnergyEnabled(delta > 0);
         Sound(AE_FRONTEND_HIGHLIGHT);
-    }
-    if (index - (int)m_powers.Count() == ROW_OVERLAY) {
+        break;
+    case ROW_OVERLAY:
         m_powers.SetOverlayEnabled(delta > 0);
+        UserSettings::SaveOverlayEnabled(delta > 0);
         Sound(AE_FRONTEND_HIGHLIGHT);
+        break;
+    }
+}
+
+void Menu::UpdateBinding() {
+    Power& power = m_powers.At(m_selected);
+    for (int vk = 1; vk < 256; ++vk) {
+        if (!Input::JustPressed(vk) || IsMouseButton(vk) || IsSideSpecificModifier(vk))
+            continue;
+        if (vk == VK_BACK || vk == VK_ESCAPE) {
+            m_binding = false;
+            Notice("Cancelled");
+            Sound(AE_FRONTEND_BACK);
+            return;
+        }
+        if (vk == VK_F1) {
+            Notice("F1 can't be used: it breaks the game's keyboard");
+            Sound(AE_FRONTEND_ERROR);
+            return;
+        }
+        if (vk == m_key || vk == VK_UP || vk == VK_DOWN || vk == VK_LEFT || vk == VK_RIGHT || vk == VK_RETURN ||
+            vk == VK_INSERT || vk == VK_DELETE) {
+            Notice(std::string(Config::KeyName(vk)) + " is used by the menu");
+            Sound(AE_FRONTEND_ERROR);
+            return;
+        }
+        Power* previous = m_powers.SetKey(power, vk);
+        UserSettings::SaveKey(power.Id(), vk);
+        std::string text = std::string(power.Name()) + ": " + Config::KeyName(vk);
+        if (previous) {
+            UserSettings::SaveKey(previous->Id(), 0);
+            text += std::string("  (removed from ") + previous->Name() + ")";
+        }
+        Notice(text);
+        Sound(AE_FRONTEND_SELECT);
+        m_binding = false;
+        return;
     }
 }
 
 void Menu::Update(float dt) {
+    m_blink += dt;
+    if (m_noticeTime > 0.0f)
+        m_noticeTime -= dt;
+
+    if (m_binding) {
+        UpdateBinding(); // every key goes to the binding, including the menu key
+        return;
+    }
+
     if (Input::JustPressed(m_key)) {
         if (m_open)
             Close();
@@ -206,8 +262,157 @@ void Menu::Update(float dt) {
         ChangeValue(+1);
     if (Input::JustPressed(VK_RETURN))
         Activate();
+
+    bool onPower = m_selected < (int)m_powers.Count();
+    if (onPower && (Input::JustPressed(VK_INSERT) || Input::JustPressed('B'))) {
+        m_binding = true; // keys are read from the NEXT frame, so Insert itself isn't bound
+        Sound(AE_FRONTEND_SELECT);
+        return;
+    }
+    if (onPower && Input::JustPressed(VK_DELETE)) {
+        Power& power = m_powers.At(m_selected);
+        if (power.Key()) {
+            m_powers.SetKey(power, 0);
+            UserSettings::SaveKey(power.Id(), 0);
+            Notice(std::string(power.Name()) + ": shortcut removed");
+            Sound(AE_FRONTEND_BACK);
+        }
+    }
     if (m_open && Input::JustPressed(VK_BACK))
         Close();
+}
+
+// --- drawing ---------------------------------------------------------------------------------
+
+void Menu::DrawPowerRow(Power& power, float x1, float x2, float y, bool selected) {
+    float textY = y + (kRowHeight - kTextSize) * 0.5f - 1.0f;
+    bool active = power.IsActive();
+
+    // status dot
+    float dot = 8.0f, dotY = y + (kRowHeight - dot) * 0.5f;
+    Ui::Rect(x1 + kPad, dotY, x1 + kPad + dot, dotY + dot, active ? Ui::kActive : CRGBA(70, 70, 78, 255));
+
+    // name, then the shortcut badge right after it
+    float nameX = x1 + kPad + dot + 12.0f;
+    CRGBA nameColor = selected ? Ui::kGold : active ? Ui::kText : CRGBA(195, 195, 200, 255);
+    Ui::Text(nameX, textY, power.Name(), kTextSize, nameColor);
+    float badgeX = nameX + Ui::TextWidth(power.Name(), kTextSize) + 10.0f;
+    if (m_binding && selected) {
+        if (std::fmod(m_blink, 0.8f) < 0.5f)
+            Ui::KeyBadge(badgeX, y + (kRowHeight - kSmallSize) * 0.5f, "?", kSmallSize);
+    } else if (power.Key()) {
+        Ui::KeyBadge(badgeX, y + (kRowHeight - kSmallSize) * 0.5f, Config::KeyName(power.Key()), kSmallSize);
+    }
+
+    // value on the right: level pips + level name / state
+    float right = x2 - kPad;
+    bool adjustable = power.GetMode() == Power::Mode::Toggle || power.HasPicker(); // Left/Right do something
+    if (selected && adjustable) {
+        Ui::Text(right, textY, ">", kTextSize, Ui::kGold, Ui::Right);
+        right -= 18.0f;
+    }
+    char value[40];
+    CRGBA valueColor = Ui::kTextDim;
+    switch (power.GetMode()) {
+    case Power::Mode::Toggle:
+        if (power.MaxLevel() > 1) {
+            float pips = Ui::Pips(right, y + kRowHeight * 0.5f - 5.0f, power.MaxLevel(), power.Level(), 10.0f,
+                                  active ? Ui::kActive : Ui::kTextDim);
+            right -= pips + 12.0f;
+        }
+        if (!active)
+            std::snprintf(value, sizeof(value), "OFF");
+        else if (power.LevelName(power.Level()))
+            std::snprintf(value, sizeof(value), "%s", power.LevelName(power.Level()));
+        else if (power.MaxLevel() > 1)
+            std::snprintf(value, sizeof(value), "LVL %d", power.Level());
+        else
+            std::snprintf(value, sizeof(value), "ON");
+        if (active)
+            valueColor = Ui::kActive;
+        break;
+    case Power::Mode::OneShot:
+        std::snprintf(value, sizeof(value), "%s", power.HasPicker() ? power.PickerValue() : "USE");
+        valueColor = selected ? Ui::kText : CRGBA(200, 200, 205, 255);
+        break;
+    case Power::Mode::Hold:
+        std::snprintf(value, sizeof(value), "HOLD");
+        break;
+    }
+    Ui::Text(right, textY, value, kTextSize * 0.9f, valueColor, Ui::Right);
+    if (selected && adjustable) {
+        float w = Ui::TextWidth(value, kTextSize * 0.9f);
+        Ui::Text(right - w - 8.0f, textY, "<", kTextSize, Ui::kGold, Ui::Right);
+    }
+}
+
+void Menu::DrawSettingRow(int setting, float x1, float x2, float y, bool selected) {
+    float textY = y + (kRowHeight - kTextSize) * 0.5f - 1.0f;
+    const char* label = "";
+    const char* value = "";
+    bool on = false;
+    switch (setting) {
+    case ROW_ENERGY:
+        label = "Energy system";
+        on = Energy::IsEnabled();
+        value = on ? "ON" : "OFF (infinite)";
+        break;
+    case ROW_OVERLAY:
+        label = "HUD power list";
+        on = m_powers.IsOverlayEnabled();
+        value = on ? "ON" : "OFF";
+        break;
+    case ROW_CLOSE:
+        label = "Close menu";
+        break;
+    }
+    Ui::Text(x1 + kPad + 20.0f, textY, label, kTextSize, selected ? Ui::kGold : Ui::kText);
+    if (*value) {
+        float right = x2 - kPad;
+        if (selected) {
+            Ui::Text(right, textY, ">", kTextSize, Ui::kGold, Ui::Right);
+            right -= 18.0f;
+        }
+        Ui::Text(right, textY, value, kTextSize * 0.9f, on ? Ui::kActive : Ui::kTextDim, Ui::Right);
+        if (selected)
+            Ui::Text(right - Ui::TextWidth(value, kTextSize * 0.9f) - 8.0f, textY, "<", kTextSize, Ui::kGold, Ui::Right);
+    }
+}
+
+void Menu::DrawFooter(float x1, float x2, float y) {
+    Ui::Rect(x1 + kPad, y, x2 - kPad, y + 1.5f, CRGBA(255, 255, 255, 40));
+    y += 10.0f;
+
+    // line 1: what the selected power does / binding prompt / feedback
+    std::string line;
+    CRGBA color = Ui::kTextDim;
+    if (m_binding) {
+        line = "Press the key for " + std::string(m_powers.At(m_selected).Name()) + "   (Backspace: cancel)";
+        color = Ui::kGold;
+    } else if (m_noticeTime > 0.0f) {
+        line = m_notice;
+        color = Ui::kActive;
+    } else if (m_selected < (int)m_powers.Count()) {
+        line = m_powers.At(m_selected).Description();
+    }
+    // wraps inside the panel; room for two lines is reserved so the layout doesn't jump around
+    Ui::Text(x1 + kPad, y, line.c_str(), kSmallSize, color, Ui::Left, Ui::FontBody, (x2 - x1) - kPad * 2.0f);
+    y += (kSmallSize + 6.0f) * 2.0f + 10.0f;
+
+    // lines 2-3: key hints as badges
+    struct Hint { const char* key; const char* label; };
+    const Hint lines[2][3] = {{{"Up/Down", "select"}, {"Left/Right", "level"}, {"Enter", "on/off"}},
+                              {{"Ins", "bind shortcut"}, {"Del", "remove shortcut"}, {"Bksp", "close"}}};
+    float size = kSmallSize * 0.85f;
+    for (const auto& hints : lines) {
+        float x = x1 + kPad;
+        for (const Hint& hint : hints) {
+            x += Ui::KeyBadge(x, y, hint.key, size) + 5.0f;
+            Ui::Text(x, y, hint.label, size, Ui::kTextDim);
+            x += Ui::TextWidth(hint.label, size) + 14.0f;
+        }
+        y += size + 12.0f;
+    }
 }
 
 void Menu::Draw() {
@@ -216,97 +421,94 @@ void Menu::Draw() {
 
     int count = ItemCount();
     int powerCount = (int)m_powers.Count();
-    // a header row wherever the category changes (e.g. "WORLD" after the superpowers)
-    int headers = 0;
-    for (int i = 1; i < powerCount; ++i)
-        if (std::strcmp(m_powers.At(i).Category(), m_powers.At(i - 1).Category()) != 0)
-            ++headers;
-    // powers, headers, a gap row, settings
-    float rowsHeight = (count + headers + 1) * kRowHeight;
-    float bottom = kTop + kTitleHeight + rowsHeight + kPadding + 14.0f;
 
-    Rect(kLeft, kTop, kLeft + kWidth, bottom, CRGBA(0, 0, 0, 190));
-    Rect(kLeft, kTop, kLeft + kWidth, kTop + kTitleHeight, CRGBA(160, 30, 20, 230));
-
-    CFont::SetFontStyle(FONT_PRICEDOWN);
-    SetupText(0.9f, 1.6f, CRGBA(255, 255, 255, 255), ALIGN_LEFT);
-    CFont::PrintString(SCREEN_COORD(kLeft + kPadding), SCREEN_COORD(kTop + 2.0f), "Armageddon+");
-
-    char value[32];
-    float y = kTop + kTitleHeight + kPadding / 2.0f;
+    // 1) lay out the list in "content" coordinates: section labels, rows, gap before settings
+    struct Item {
+        int row;   // -1 = section label
+        float y;   // top, relative to the start of the list
+        const char* section;
+    };
+    std::vector<Item> items;
+    float contentY = 0.0f, selectedTop = 0.0f;
     for (int row = 0; row < count; ++row) {
+        if (row < powerCount && (row == 0 || std::strcmp(m_powers.At(row).Category(), m_powers.At(row - 1).Category()) != 0)) {
+            items.push_back({-1, contentY, m_powers.At(row).Category()});
+            contentY += kSectionHeight;
+        }
         if (row == powerCount)
-            y += kRowHeight; // gap between powers and settings
-        if (row > 0 && row < powerCount &&
-            std::strcmp(m_powers.At(row).Category(), m_powers.At(row - 1).Category()) != 0) {
-            // section header: thin line + category name
-            Rect(kLeft + kPadding, y + kRowHeight * 0.5f, kLeft + kWidth - kPadding, y + kRowHeight * 0.5f + 1.0f,
-                 CRGBA(160, 30, 20, 200));
-            CFont::SetFontStyle(FONT_MENU);
-            SetupText(0.3f, 0.75f, CRGBA(255, 120, 100, 255), ALIGN_LEFT);
-            CFont::PrintString(SCREEN_COORD(kLeft + kPadding), SCREEN_COORD(y), m_powers.At(row).Category());
-            y += kRowHeight;
-        }
-
-        bool selected = row == m_selected;
-        if (selected)
-            Rect(kLeft + 4.0f, y - 1.0f, kLeft + kWidth - 4.0f, y + kRowHeight - 2.0f, CRGBA(255, 255, 255, 40));
-
-        const char* label;
-        CRGBA valueColor(200, 200, 200, 255);
-        if (row < powerCount) {
-            Power& power = m_powers.At(row);
-            label = power.Name();
-            switch (power.GetMode()) {
-            case Power::Mode::Toggle:
-                if (!power.IsActive())
-                    std::snprintf(value, sizeof(value), "Off");
-                else if (power.LevelName(power.Level()))
-                    std::snprintf(value, sizeof(value), "%s", power.LevelName(power.Level()));
-                else if (power.MaxLevel() > 1)
-                    std::snprintf(value, sizeof(value), "Level %d/%d", power.Level(), power.MaxLevel());
-                else
-                    std::snprintf(value, sizeof(value), "On");
-                if (power.IsActive())
-                    valueColor = CRGBA(120, 255, 120, 255);
-                break;
-            case Power::Mode::OneShot:
-                std::snprintf(value, sizeof(value), "[Enter]");
-                break;
-            case Power::Mode::Hold:
-                std::snprintf(value, sizeof(value), "hold %s", Config::KeyName(power.Key()));
-                break;
-            }
-            if (selected && power.GetMode() == Power::Mode::Toggle) {
-                char arrows[40];
-                std::snprintf(arrows, sizeof(arrows), "< %s >", value);
-                std::snprintf(value, sizeof(value), "%s", arrows);
-            }
-        } else if (row - powerCount == ROW_ENERGY) {
-            label = "Energy system";
-            std::snprintf(value, sizeof(value), selected ? "< %s >" : "%s", Energy::IsEnabled() ? "On" : "Off (infinite)");
-        } else if (row - powerCount == ROW_OVERLAY) {
-            label = "HUD power list";
-            std::snprintf(value, sizeof(value), selected ? "< %s >" : "%s", m_powers.IsOverlayEnabled() ? "On" : "Off");
-        } else {
-            label = "Close";
-            value[0] = '\0';
-        }
-
-        CRGBA labelColor = selected ? CRGBA(255, 200, 60, 255) : CRGBA(230, 230, 230, 255);
-        CFont::SetFontStyle(FONT_SUBTITLES);
-        SetupText(0.38f, 0.9f, labelColor, ALIGN_LEFT);
-        CFont::PrintString(SCREEN_COORD(kLeft + kPadding), SCREEN_COORD(y), label);
-
-        SetupText(0.38f, 0.9f, valueColor, ALIGN_RIGHT);
-        CFont::PrintString(SCREEN_COORD(kLeft + kWidth - kPadding), SCREEN_COORD(y), value);
-
-        y += kRowHeight;
+            contentY += 14.0f; // gap before the settings
+        if (row == m_selected)
+            selectedTop = contentY;
+        items.push_back({row, contentY, nullptr});
+        contentY += kRowHeight;
     }
 
-    CFont::SetFontStyle(FONT_SUBTITLES);
-    SetupText(0.28f, 0.7f, CRGBA(170, 170, 170, 255), ALIGN_LEFT);
-    char hint[96];
-    std::snprintf(hint, sizeof(hint), "Arrows: select/level  Enter: toggle  %s/Backspace: close", Config::KeyName(m_key));
-    CFont::PrintString(SCREEN_COORD(kLeft + kPadding), SCREEN_COORD(y + 2.0f), hint);
+    // 2) fit the panel on screen; if the list is taller, scroll so the selected row stays visible
+    float listHeight = Ui::ScreenHeight() - kTop * 2.0f - kHeaderHeight - kFooterHeight;
+    if (listHeight > contentY)
+        listHeight = contentY;
+    float margin = kRowHeight * 1.5f;
+    if (selectedTop - m_scroll < margin)
+        m_scroll = selectedTop - margin;
+    if (selectedTop + kRowHeight - m_scroll > listHeight - margin)
+        m_scroll = selectedTop + kRowHeight - listHeight + margin;
+    if (m_scroll > contentY - listHeight)
+        m_scroll = contentY - listHeight;
+    if (m_scroll < 0.0f)
+        m_scroll = 0.0f;
+
+    float x1 = kLeft, x2 = kLeft + kWidth, y = kTop;
+    float height = kHeaderHeight + listHeight + kFooterHeight;
+
+    // panel: drop shadow, dark gradient body, thin red outline
+    Ui::Rect(x1 + 6.0f, y + 6.0f, x2 + 6.0f, y + height + 6.0f, CRGBA(0, 0, 0, 90));
+    Ui::GradientV(x1, y, x2, y + height, CRGBA(18, 14, 18, 230), CRGBA(6, 6, 10, 235));
+    Ui::Frame(x1, y, x2, y + height, 1.5f, CRGBA(215, 40, 30, 160));
+
+    // header: red gradient + title + energy readout
+    Ui::GradientH(x1, y, x2, y + kHeaderHeight, Ui::kAccent, Ui::kAccentDark);
+    Ui::Text(x1 + kPad, y + 6.0f, "Armageddon+", 46.0f, CRGBA(255, 255, 255, 255), Ui::Left, Ui::FontTitle);
+    Ui::Text(x2 - kPad, y + 12.0f, "POWER MENU", 18.0f, CRGBA(255, 220, 210, 230), Ui::Right, Ui::FontHeader);
+    if (Energy::IsEnabled()) {
+        char energy[32];
+        std::snprintf(energy, sizeof(energy), "ENERGY %d", (int)std::ceil(Energy::Current()));
+        Ui::Text(x2 - kPad, y + 36.0f, energy, 18.0f, CRGBA(170, 210, 255, 255), Ui::Right, Ui::FontHeader);
+    }
+    float listTop = y + kHeaderHeight;
+
+    // 3) draw the items that are fully inside the visible window
+    for (const Item& item : items) {
+        float itemHeight = item.row < 0 ? kSectionHeight : kRowHeight;
+        float top = item.y - m_scroll;
+        if (top < -0.5f || top + itemHeight > listHeight + 0.5f)
+            continue;
+        float iy = listTop + top;
+        if (item.row < 0) {
+            Ui::Text(x1 + kPad, iy + 6.0f, item.section, 18.0f, CRGBA(255, 110, 95, 255), Ui::Left, Ui::FontHeader);
+            float lineX = x1 + kPad + Ui::TextWidth(item.section, 18.0f, Ui::FontHeader) + 10.0f;
+            Ui::GradientH(lineX, iy + 15.0f, x2 - kPad, iy + 16.5f, CRGBA(215, 40, 30, 180), CRGBA(215, 40, 30, 0));
+            continue;
+        }
+        if (item.row == powerCount)
+            Ui::Rect(x1 + kPad, iy - 8.0f, x2 - kPad, iy - 6.5f, CRGBA(255, 255, 255, 30));
+
+        bool selected = item.row == m_selected;
+        if (selected) {
+            // highlight: red glow fading to the right + accent bar on the left
+            Ui::GradientH(x1 + 2.0f, iy, x2 - 2.0f, iy + kRowHeight, CRGBA(215, 40, 30, 120), CRGBA(215, 40, 30, 10));
+            Ui::Rect(x1 + 2.0f, iy, x1 + 7.0f, iy + kRowHeight, Ui::kAccent);
+        }
+        if (item.row < powerCount)
+            DrawPowerRow(m_powers.At(item.row), x1, x2, iy, selected);
+        else
+            DrawSettingRow(item.row - powerCount, x1, x2, iy, selected);
+    }
+
+    // "more" hints when the list is scrolled
+    if (m_scroll > 0.5f)
+        Ui::Text(x2 - kPad, listTop + 2.0f, "^ more", 16.0f, Ui::kTextDim, Ui::Right);
+    if (m_scroll + listHeight < contentY - 0.5f)
+        Ui::Text(x2 - kPad, listTop + listHeight - 18.0f, "v more", 16.0f, Ui::kTextDim, Ui::Right);
+
+    DrawFooter(x1, x2, listTop + listHeight + 6.0f);
 }

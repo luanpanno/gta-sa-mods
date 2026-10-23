@@ -18,7 +18,7 @@ Mods for **Grand Theft Auto: San Andreas** (PC), built step by step: from small 
 ## What's included
 
 ### ArmageddonPlus: superpowers (C++ plugin)
-Press **F10** in game to open the power menu: **↑/↓** select, **←/→** set the level, **Enter** toggles, **Backspace** closes. Full controls and tips: [docs/powers.md](docs/powers.md).
+Press **F10** in game to open the power menu: **↑/↓** select, **←/→** set the level, **Enter** toggles, **Insert** binds a shortcut key (e.g. X = Flight on/off), **Backspace** closes. Full controls and tips: [docs/powers.md](docs/powers.md).
 
 | Power | Levels | What it does | How to use it once it's on |
 |---|---|---|---|
@@ -31,7 +31,14 @@ Press **F10** in game to open the power menu: **↑/↓** select, **←/→** se
 | Fire Trail | 3 | Leaves a trail of fire on foot or behind his car | Just move |
 | Bullet Time | 3 | World slows to 60% / 35% / 15%, CJ stays fast | Automatic while on |
 | Invulnerability | on/off | CJ and his current car can't be damaged | Automatic while on |
-| Spawn Vehicle | one-shot | Spawns a vehicle in front of CJ (Infernus by default) | Enter in the menu |
+
+The menu's **Spawn** section has pickers: **←/→** choose, **Enter** uses.
+
+| Tool | What it does |
+|---|---|
+| Spawn Vehicle | Any of the game's ~200 spawnable vehicles, by name |
+| Give Weapon | Any weapon, with ammo |
+| Add Money | $1,000 to $10,000,000 |
 
 The menu's **World** section has mods that change the world itself:
 

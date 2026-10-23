@@ -21,6 +21,7 @@ public:
 
     const char* Name() const override { return "NPC Reactions"; }
     const char* Id() const override { return "Reactions"; }
+    const char* Description() const override { return "While a superpower is on: people flee, optionally the police come"; }
     const char* Category() const override { return "World"; }
     int MaxLevel() const override { return kLevels; }
     const char* LevelName(int level) const override;

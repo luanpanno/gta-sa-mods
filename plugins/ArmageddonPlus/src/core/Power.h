@@ -31,6 +31,14 @@ public:
     virtual const char* Category() const { return "Powers"; }
     // Optional name per level, shown instead of "Level 2/3" (e.g. "Moon"). nullptr = numbers.
     virtual const char* LevelName(int level) const { return nullptr; }
+    // One line shown at the bottom of the menu when the power is selected (controls, what it does).
+    virtual const char* Description() const { return ""; }
+
+    // Picker (OneShot powers like Spawn Vehicle): the menu shows PickerValue() and Left/Right call
+    // PickerStep(-1 / +1), or -10 / +10 with Shift held. Enter fires the power with the current choice.
+    virtual bool HasPicker() const { return false; }
+    virtual const char* PickerValue() const { return ""; }
+    virtual void PickerStep(int delta) {}
 
     // Read tuning values from [Power.<Id>]. Called once at startup.
     virtual void LoadConfig(const Config&, const char* section) {}
@@ -44,6 +52,7 @@ public:
 
     bool IsActive() const { return m_active; }
     int Level() const { return m_level; } // 0 when off, 1..MaxLevel() when on
+    int LastLevel() const { return m_lastLevel; } // what Enter / the shortcut turns it back on at
     int Key() const { return m_key; }
 
     // Energy (see core/Energy.h). Values come from the ini: Drain1..3 / Cost1..3 (or Drain / Cost).
@@ -59,6 +68,7 @@ private:
 
     bool m_active = false;
     int m_level = 0;
+    int m_lastLevel = 1; // level it had when last switched off: the shortcut brings it back at this level
     int m_key = 0;
     float m_drain[kMaxLevels] = {};
     float m_cost[kMaxLevels] = {};
