@@ -33,6 +33,15 @@ Press **F10** in game to open the power menu: **↑/↓** select, **←/→** se
 | Invulnerability | on/off | CJ and his current car can't be damaged | Automatic while on |
 | Spawn Vehicle | one-shot | Spawns a vehicle in front of CJ (Infernus by default) | Enter in the menu |
 
+The menu's **World** section has mods that change the world itself:
+
+| World mod | Levels | What it does |
+|---|---|---|
+| Gravity | Moon / Mars / Zero-G / Heavy | Gravity for everything: CJ, people, cars, objects |
+| Vehicle Handling | Sport / Race / Rocket | While driving: Shift turbo, J jump, extra grip, burst-proof tyres, auto-flip |
+| Chaos | Meteors / Exploding Traffic / Flying Cars / Riot | Random mayhem around CJ (mission cars are spared) |
+| NPC Reactions | Fear / Fear + Police | People flee when CJ uses powers, and optionally the police come |
+
 Telekinesis, Force and Lightning Strike all use the mouse buttons, so only one of them can be on at a time. Powers run on a shared **energy bar** that drains and refills; you can switch it off in the menu for infinite energy.
 
 ### CLEO scripts (learning projects)
@@ -117,8 +126,9 @@ gta-sa-mods/
 │   ├── ArmageddonPlus.vcxproj   MSBuild project (compiles every src/**/*.cpp)
 │   └── src/
 │       ├── main.cpp             entry point: registers powers, hooks game events
-│       ├── core/                Config, Input, Log, Power, PowerManager, Menu
-│       └── powers/              one class per power
+│       ├── core/                Config, Input, Log, Power, PowerManager, Menu, Energy, Fx, Sound
+│       ├── powers/              one class per superpower
+│       └── world/               world mods: Gravity, VehicleHandling, Chaos, Reactions
 ├── scripts/                     build.ps1, deploy.ps1, run.ps1
 └── .vscode/                     build tasks + IntelliSense paths for plugin-sdk
 ```
@@ -140,7 +150,7 @@ All power tuning lives in [config/ArmageddonPlus.ini](config/ArmageddonPlus.ini)
   - [x] In-game power menu
   - [x] Energy bar with drain / costs / regen (switchable in the menu)
   - [x] Visual effects (game particles) and synthesized power sounds
-- [ ] **Phase 5: Physics and world.** Gravity changes, car handling, chaos modes, NPC and police reactions.
+- [x] **Phase 5: Physics and world.** Gravity modes, vehicle handling, chaos modes, NPC and police reactions.
 
 ## Documentation
 | Doc | For |

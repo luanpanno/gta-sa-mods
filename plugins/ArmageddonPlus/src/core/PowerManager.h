@@ -11,6 +11,12 @@ class Config;
 // switches everything off when CJ dies, and draws the debug overlay.
 class PowerManager {
 public:
+    PowerManager() { s_instance = this; }
+    static PowerManager& Instance() { return *s_instance; } // for powers that react to other powers
+
+    // true if any power of this category is on (e.g. "Powers": is CJ using superpowers right now?)
+    bool AnyActive(const char* category) const;
+
     void Register(std::unique_ptr<Power> power);
     void LoadConfig(const Config& config);
 
@@ -33,6 +39,7 @@ private:
     void SetActive(Power& power, CPlayerPed* player, bool active);
     void StepLevel(Power& power, CPlayerPed* player); // Toggle key press: off -> 1 -> ... -> max -> off
 
+    static inline PowerManager* s_instance = nullptr;
     std::vector<std::unique_ptr<Power>> m_powers;
     bool m_overlayEnabled = true;
     bool m_hotkeysEnabled = true;

@@ -33,7 +33,8 @@ core/
   PowerManager  owns the powers: on/off, levels, exclusive groups, optional hotkeys,
                 per-frame updates, switch-off on death, top-right power list
   Menu          F10 power menu (arrows / Enter / Backspace)
-powers/         one class per power
+powers/         one class per superpower (Category "Powers")
+world/          world mods: Gravity, VehicleHandling, Chaos, Reactions (Category "World")
 ```
 
 Every game frame (`gameProcessEvent`, after the game has processed the world):
@@ -49,6 +50,8 @@ Every frame while the HUD draws (`drawHudEvent`): the powers' `Draw()` (screen e
 | `Name()`, `Id()` | Menu label; ini section `[Power.<Id>]` |
 | `GetMode()` | `Toggle` (default), `Hold` (active while a key is held; needs `Key=`), `OneShot` (fires once) |
 | `MaxLevel()` | > 1 gives levels: the menu's ←/→ pick Off/1/2/3; `Level()` returns the current one |
+| `Category()` | Menu section: `"Powers"` (default) or `"World"`. A header is drawn where the category changes |
+| `LevelName(level)` | Optional name shown instead of "Level 2/3", e.g. "Moon" |
 | `ExclusiveGroup()` | Powers with the same group string can't be on together (`"mouse"`: Telekinesis, Force, Lightning Strike) |
 | `LoadConfig(config, section)` | Read tuning values once at startup |
 | `OnActivate` / `OnDeactivate` | Turned on / off (also off when CJ dies). OneShot: `OnActivate` = fire |
@@ -88,6 +91,10 @@ It shows up in the menu automatically.
 | `FireTrail` | `gFireManager.StartFire` every `Spacing` meters at CJ's feet, or behind his car. CJ and the car are fireproof. |
 | `BulletTime` | `CTimer::ms_fTimeScale` slows the game. Every animation on CJ runs `1/scale` faster, and since peds move by their animations, he stays real-time. Each anim's own speed is remembered, so it stacks with Super Speed. |
 | `Invulnerability` | All proof flags on CJ and his current vehicle, and health kept full. |
+| `Gravity` | Overwrites the game's single gravity constant `GAME_GRAVITY` (0.008 at `0x863984`) every frame, and restores the saved value when turned off |
+| `VehicleHandling` | On CJ's car: turbo = velocity along `GetForward()` up to a top speed; grip = remove part of the `GetRight()` component on the ground; jump = upward velocity; `bTyresDontBurst` saved and restored per car; upside down and stopped for 1 s → `SetOrientation(0, 0, heading)` |
+| `Chaos` | Timer-driven: `CExplosion::AddExplosion` at random ground points (`FindGroundZForCoord`), `BlowUpCar`, or launching random cars. Riot = the game's own `CCheat::m_aCheatsActive[CHEAT_RIOT_MODE]`. Skips `MISSION_VEHICLE` cars |
+| `Reactions` | While `PowerManager::AnyActive("Powers")`: `TASK_SMART_FLEE_CHAR` on nearby non-mission peds (each at most every 10 s); level 2 also `ALTER_WANTED_LEVEL_NO_DROP` |
 | `SpawnVehicle` | `CStreaming::RequestModel` → the right vehicle class for the model type → `Teleport` (adds it to the world). Adapted from plugin-sdk's `CreateCar` example. |
 
 ## plugin-sdk vs CLEO

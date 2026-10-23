@@ -198,8 +198,70 @@ One-shot: select it in the menu and press **Enter**. A vehicle appears 6 m in fr
 
 ---
 
+# World mods
+The **WORLD** section of the menu has mods that change the world rather than CJ. They don't use energy.
+
+## Gravity
+Gravity for everything: CJ, people, cars, objects, debris.
+
+| Level | Gravity |
+|---|---|
+| Moon | 17% |
+| Mars | 38% |
+| Zero-G | 2%: things barely come down |
+| Heavy | 250% |
+
+Combines well with Super Speed (huge moon jumps) and Force (cars drifting away in Zero-G).
+- ini: `Moon`, `Mars`, `ZeroG`, `Heavy` (multipliers).
+
+## Vehicle Handling
+Super handling for whatever CJ is **driving**.
+
+| Input | Action |
+|---|---|
+| Hold **Shift** | Turbo: extra acceleration up to a higher top speed |
+| **J** | Jump the car (wheels on the ground) |
+| Always | More grip in corners, tyres can't burst, the car flips back onto its wheels if it lands upside down and stops |
+
+| Level | Turbo | Top speed | Jump |
+|---|---|---|---|
+| Sport | 12 m/s² | 55 m/s (~200 km/h) | 6 m/s |
+| Race | 25 m/s² | 85 m/s (~300 km/h) | 9 m/s |
+| Rocket | 50 m/s² | 140 m/s (~500 km/h) | 14 m/s |
+
+- ini: `TurboKey`, `JumpKey`, `TurboAccel1-3`, `TopSpeed1-3`, `Grip1-3`, `Jump1-3`.
+
+## Chaos
+One chaos mode at a time:
+
+| Level | Mode |
+|---|---|
+| Meteors | Explosions rain down at random spots 12-60 m around CJ |
+| Exploding Traffic | A random nearby car blows up every 2.5 s |
+| Flying Cars | Random nearby cars get launched into the air, spinning |
+| Riot | Everyone fights everyone (the game's own riot cheat) |
+
+Mission vehicles are never touched, so missions keep working.
+- ini: `MeteorInterval`, `ExplodeInterval`, `LaunchInterval`, `Radius`.
+
+## NPC Reactions
+How the world reacts **while any superpower is on**:
+
+| Level | Reaction |
+|---|---|
+| Fear | Pedestrians within 35 m run away from CJ, screaming |
+| Fear + Police | ...and the wanted level goes up to at least 2 stars |
+
+Mission characters aren't affected. Note that Invulnerability counts as a superpower too.
+- ini: `Radius`, `PoliceStars`.
+
+---
+
 ## Fun combos
 - **Flash:** Super Speed 3 + Fire Trail 2.
 - **Superman:** Flight 2 + Invulnerability + Force (push from the air).
 - **Max Payne:** Bullet Time 2 + Explosion Punch 1.
 - **Storm god:** Flight 1 (hover high) + Lightning Strike 3.
+- **Moonwalker:** Gravity Moon + Super Speed 2: jumps over buildings.
+- **Armageddon:** Chaos Meteors + Invulnerability + Bullet Time 1.
+- **Stunt driver:** Vehicle Handling Rocket + Gravity Mars + jump off a ramp.

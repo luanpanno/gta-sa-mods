@@ -16,6 +16,13 @@
 
 using namespace plugin;
 
+bool PowerManager::AnyActive(const char* category) const {
+    for (auto& power : m_powers)
+        if (power->m_active && std::strcmp(power->Category(), category) == 0)
+            return true;
+    return false;
+}
+
 void PowerManager::Register(std::unique_ptr<Power> power) {
     m_powers.push_back(std::move(power));
 }
@@ -184,7 +191,9 @@ void PowerManager::DrawOverlay() {
         char key[24] = "";
         if (power->m_key) // only powers with an optional hotkey (Key= in the ini) show it
             std::snprintf(key, sizeof(key), "[%s] ", Config::KeyName(power->m_key));
-        if (power->MaxLevel() > 1 && power->m_active)
+        if (power->m_active && power->LevelName(power->m_level))
+            std::snprintf(line, sizeof(line), "%s%s: %s", key, power->Name(), power->LevelName(power->m_level));
+        else if (power->MaxLevel() > 1 && power->m_active)
             std::snprintf(line, sizeof(line), "%s%s %d/%d", key, power->Name(), power->m_level, power->MaxLevel());
         else
             std::snprintf(line, sizeof(line), "%s%s", key, power->Name());

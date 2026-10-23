@@ -27,6 +27,10 @@ public:
     // Powers sharing a group can't be on together: turning one on turns the others off
     // (e.g. "mouse" = powers that take over the mouse buttons). nullptr = no group.
     virtual const char* ExclusiveGroup() const { return nullptr; }
+    // Menu section: "Powers" (default) or "World" (gravity, chaos...: things that change the world, not CJ)
+    virtual const char* Category() const { return "Powers"; }
+    // Optional name per level, shown instead of "Level 2/3" (e.g. "Moon"). nullptr = numbers.
+    virtual const char* LevelName(int level) const { return nullptr; }
 
     // Read tuning values from [Power.<Id>]. Called once at startup.
     virtual void LoadConfig(const Config&, const char* section) {}

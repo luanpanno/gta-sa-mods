@@ -19,6 +19,10 @@
 #include "powers/SpawnVehicle.h"
 #include "powers/SuperSpeed.h"
 #include "powers/Telekinesis.h"
+#include "world/Chaos.h"
+#include "world/Gravity.h"
+#include "world/Reactions.h"
+#include "world/VehicleHandling.h"
 
 #include "plugin.h"
 #include "CFont.h"
@@ -66,6 +70,11 @@ public:
         g_powers.Register(std::make_unique<BulletTime>()); // after the others: it speeds up CJ's anims as they are
         g_powers.Register(std::make_unique<Invulnerability>());
         g_powers.Register(std::make_unique<SpawnVehicle>());
+        // world mods (own "World" section in the menu)
+        g_powers.Register(std::make_unique<Gravity>());
+        g_powers.Register(std::make_unique<VehicleHandling>());
+        g_powers.Register(std::make_unique<Chaos>());
+        g_powers.Register(std::make_unique<Reactions>());
 
         Config config;
         config.Load(paths::GetPluginDirRelativePathA("ArmageddonPlus.ini"));

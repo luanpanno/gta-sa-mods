@@ -16,6 +16,7 @@
 #include "extensions/ScriptCommands.h"
 
 #include <cstdio>
+#include <cstring>
 
 using namespace plugin;
 
@@ -215,8 +216,13 @@ void Menu::Draw() {
 
     int count = ItemCount();
     int powerCount = (int)m_powers.Count();
-    // powers, a gap row, settings
-    float rowsHeight = (count + 1) * kRowHeight;
+    // a header row wherever the category changes (e.g. "WORLD" after the superpowers)
+    int headers = 0;
+    for (int i = 1; i < powerCount; ++i)
+        if (std::strcmp(m_powers.At(i).Category(), m_powers.At(i - 1).Category()) != 0)
+            ++headers;
+    // powers, headers, a gap row, settings
+    float rowsHeight = (count + headers + 1) * kRowHeight;
     float bottom = kTop + kTitleHeight + rowsHeight + kPadding + 14.0f;
 
     Rect(kLeft, kTop, kLeft + kWidth, bottom, CRGBA(0, 0, 0, 190));
@@ -231,6 +237,16 @@ void Menu::Draw() {
     for (int row = 0; row < count; ++row) {
         if (row == powerCount)
             y += kRowHeight; // gap between powers and settings
+        if (row > 0 && row < powerCount &&
+            std::strcmp(m_powers.At(row).Category(), m_powers.At(row - 1).Category()) != 0) {
+            // section header: thin line + category name
+            Rect(kLeft + kPadding, y + kRowHeight * 0.5f, kLeft + kWidth - kPadding, y + kRowHeight * 0.5f + 1.0f,
+                 CRGBA(160, 30, 20, 200));
+            CFont::SetFontStyle(FONT_MENU);
+            SetupText(0.3f, 0.75f, CRGBA(255, 120, 100, 255), ALIGN_LEFT);
+            CFont::PrintString(SCREEN_COORD(kLeft + kPadding), SCREEN_COORD(y), m_powers.At(row).Category());
+            y += kRowHeight;
+        }
 
         bool selected = row == m_selected;
         if (selected)
@@ -245,6 +261,8 @@ void Menu::Draw() {
             case Power::Mode::Toggle:
                 if (!power.IsActive())
                     std::snprintf(value, sizeof(value), "Off");
+                else if (power.LevelName(power.Level()))
+                    std::snprintf(value, sizeof(value), "%s", power.LevelName(power.Level()));
                 else if (power.MaxLevel() > 1)
                     std::snprintf(value, sizeof(value), "Level %d/%d", power.Level(), power.MaxLevel());
                 else
