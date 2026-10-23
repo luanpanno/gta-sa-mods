@@ -38,6 +38,8 @@ core/
   UserSettings  ArmageddonPlus.user.ini in the game folder: shortcuts + menu toggles (never overwritten by deploy)
 powers/         one class per superpower (Category "Powers")
 world/          world mods: Gravity, VehicleHandling, Chaos, Reactions (Category "World")
+cheats/         Cheats: every built-in cheat with name/group/one-time flag; Apply() = run
+                CCheat::m_aCheatFunctions[id], or flip CCheat::m_aCheatsActive[id] + HandleSpecialCheats
 ```
 
 Every game frame (`gameProcessEvent`, after the game has processed the world):

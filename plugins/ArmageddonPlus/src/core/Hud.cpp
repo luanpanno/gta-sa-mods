@@ -4,6 +4,9 @@
 #include "core/Energy.h"
 #include "core/PowerManager.h"
 #include "core/Ui.h"
+#include "cheats/Cheats.h"
+
+#include <algorithm>
 
 #include <cmath>
 #include <cstdio>
@@ -16,6 +19,8 @@ const float kWidth = 300.0f;     // power list background width
 const float kRowHeight = 30.0f;
 const float kTextSize = 23.0f;
 const float kBadgeSize = 18.0f;
+const float kCheatRowHeight = 24.0f;
+const float kCheatTextSize = 19.0f;
 
 // bottom center: [ENERGY] [■■■■■■■■□□□] [87]
 void DrawEnergyBar() {
@@ -74,11 +79,16 @@ void Draw(PowerManager& powers) {
     for (size_t i = 0; i < powers.Count(); ++i)
         if (powers.At(i).IsActive() || powers.At(i).Key())
             ++rows;
-    if (rows == 0)
+    // active toggle cheats, listed below the powers (at most kMaxCheats, then "+N more")
+    const int kMaxCheats = 6;
+    int activeCheats = Cheats::ActiveCount();
+    int cheatRows = activeCheats == 0 ? 0 : 1 + std::min(activeCheats, kMaxCheats) + (activeCheats > kMaxCheats ? 1 : 0);
+    if (rows == 0 && cheatRows == 0)
         return;
 
     float top = y + 2.0f;
-    Ui::GradientH(right - kWidth - 20.0f, top, right + 14.0f, top + rows * kRowHeight + 8.0f,
+    float cheatsHeight = cheatRows * kCheatRowHeight;
+    Ui::GradientH(right - kWidth - 20.0f, top, right + 14.0f, top + rows * kRowHeight + cheatsHeight + 8.0f,
                   CRGBA(0, 0, 0, 0), CRGBA(0, 0, 0, 170));
     y = top + 4.0f;
 
@@ -108,6 +118,24 @@ void Draw(PowerManager& powers) {
         if (power.Key())
             Ui::KeyBadge(x, y + (kRowHeight - kBadgeSize) * 0.5f, Config::KeyName(power.Key()), kBadgeSize, true);
         y += kRowHeight;
+    }
+
+    if (activeCheats == 0)
+        return;
+    Ui::Text(right, y + 4.0f, "CHEATS", 15.0f, CRGBA(255, 200, 70, 255), Ui::Right, Ui::FontHeader);
+    y += kCheatRowHeight;
+    int shown = 0;
+    for (int i = 0; i < Cheats::Count() && shown < kMaxCheats; ++i) {
+        if (Cheats::Get(i).oneTime || !Cheats::IsActive(i))
+            continue;
+        Ui::Text(right, y, Cheats::Get(i).name, kCheatTextSize, CRGBA(255, 220, 140, 255), Ui::Right);
+        y += kCheatRowHeight;
+        ++shown;
+    }
+    if (activeCheats > kMaxCheats) {
+        char more[24];
+        std::snprintf(more, sizeof(more), "+%d more", activeCheats - kMaxCheats);
+        Ui::Text(right, y, more, kCheatTextSize, Ui::kTextDim, Ui::Right);
     }
 }
 

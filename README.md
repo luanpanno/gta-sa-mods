@@ -38,7 +38,10 @@ The menu's **Spawn** section has pickers: **←/→** choose, **Enter** uses.
 |---|---|
 | Spawn Vehicle | Any of the game's ~200 spawnable vehicles, by name |
 | Give Weapon | Any weapon, with ammo |
+| Add Ammo | Refill the current weapon or all guns (up to max) |
 | Add Money | $1,000 to $10,000,000 |
+
+The **Cheats** row opens a page with all 91 built-in cheats, grouped and named. One-time cheats run with Enter, toggle cheats switch on/off, and active cheats are shown in the HUD.
 
 The menu's **World** section has mods that change the world itself:
 

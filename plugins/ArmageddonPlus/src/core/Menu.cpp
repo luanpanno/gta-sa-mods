@@ -7,6 +7,7 @@
 #include "core/PowerManager.h"
 #include "core/Ui.h"
 #include "core/UserSettings.h"
+#include "cheats/Cheats.h"
 
 #include "plugin.h"
 #include "CAudioEngine.h"
@@ -23,7 +24,7 @@ using namespace plugin;
 namespace {
 
 // rows after the powers
-enum SettingRow { ROW_ENERGY, ROW_OVERLAY, ROW_CLOSE, SETTING_ROWS };
+enum SettingRow { ROW_CHEATS, ROW_ENERGY, ROW_OVERLAY, ROW_CLOSE, SETTING_ROWS };
 
 // layout, in Ui reference units (pixels on a 1080-pixel-tall screen, times [Menu] Scale)
 const float kLeft = 48.0f;
@@ -83,6 +84,7 @@ void Menu::Open() {
     }
     m_open = true;
     m_binding = false;
+    m_page = Page::Main;
     // No walking/driving with the arrows, no Enter = enter car. Same game command as
     // CLEO's set_player_control (opcode 01B4).
     Command<Commands::SET_PLAYER_CONTROL>(0, false);
@@ -136,6 +138,10 @@ void Menu::Activate() {
         return;
     }
     switch (index - (int)m_powers.Count()) {
+    case ROW_CHEATS:
+        m_page = Page::Cheats;
+        Sound(AE_FRONTEND_SELECT);
+        break;
     case ROW_ENERGY:
         ChangeValue(Energy::IsEnabled() ? -1 : +1);
         break;
@@ -173,6 +179,12 @@ void Menu::ChangeValue(int delta) {
         return;
     }
     switch (index - (int)m_powers.Count()) {
+    case ROW_CHEATS:
+        if (delta > 0) {
+            m_page = Page::Cheats;
+            Sound(AE_FRONTEND_SELECT);
+        }
+        break;
     case ROW_ENERGY:
         Energy::SetEnabled(delta > 0);
         UserSettings::SaveEnergyEnabled(delta > 0);
@@ -245,6 +257,10 @@ void Menu::Update(float dt) {
     CPlayerPed* player = FindPlayerPed();
     if (!player || player->m_fHealth <= 0.0f) {
         Close(); // died with the menu open
+        return;
+    }
+    if (m_page == Page::Cheats) {
+        UpdateCheats(dt);
         return;
     }
     int count = ItemCount();
@@ -351,7 +367,14 @@ void Menu::DrawSettingRow(int setting, float x1, float x2, float y, bool selecte
     const char* label = "";
     const char* value = "";
     bool on = false;
+    char cheats[24];
     switch (setting) {
+    case ROW_CHEATS:
+        label = "Cheats";
+        on = Cheats::ActiveCount() > 0;
+        std::snprintf(cheats, sizeof(cheats), on ? "%d ON  >>" : ">>", Cheats::ActiveCount());
+        value = cheats;
+        break;
     case ROW_ENERGY:
         label = "Energy system";
         on = Energy::IsEnabled();
@@ -415,32 +438,21 @@ void Menu::DrawFooter(float x1, float x2, float y) {
     }
 }
 
-void Menu::Draw() {
-    if (!m_open)
-        return;
+// --- generic scrolling list (used by both pages) ---------------------------------------------
 
-    int count = ItemCount();
-    int powerCount = (int)m_powers.Count();
-
-    // 1) lay out the list in "content" coordinates: section labels, rows, gap before settings
-    struct Item {
-        int row;   // -1 = section label
-        float y;   // top, relative to the start of the list
-        const char* section;
-    };
-    std::vector<Item> items;
+void Menu::DrawList(const char* subtitle, const std::vector<ListItem>& items, int selectedRow, float& scroll,
+                    const std::function<void(int row, float x1, float x2, float y, bool selected)>& drawRow,
+                    const std::function<void(float x1, float x2, float y)>& drawFooter) {
+    // 1) lay out in "content" coordinates
+    std::vector<float> tops(items.size());
     float contentY = 0.0f, selectedTop = 0.0f;
-    for (int row = 0; row < count; ++row) {
-        if (row < powerCount && (row == 0 || std::strcmp(m_powers.At(row).Category(), m_powers.At(row - 1).Category()) != 0)) {
-            items.push_back({-1, contentY, m_powers.At(row).Category()});
-            contentY += kSectionHeight;
-        }
-        if (row == powerCount)
-            contentY += 14.0f; // gap before the settings
-        if (row == m_selected)
+    for (size_t i = 0; i < items.size(); ++i) {
+        if (items[i].gapBefore)
+            contentY += 14.0f;
+        tops[i] = contentY;
+        if (items[i].row == selectedRow)
             selectedTop = contentY;
-        items.push_back({row, contentY, nullptr});
-        contentY += kRowHeight;
+        contentY += items[i].row < 0 ? kSectionHeight : kRowHeight;
     }
 
     // 2) fit the panel on screen; if the list is taller, scroll so the selected row stays visible
@@ -448,14 +460,14 @@ void Menu::Draw() {
     if (listHeight > contentY)
         listHeight = contentY;
     float margin = kRowHeight * 1.5f;
-    if (selectedTop - m_scroll < margin)
-        m_scroll = selectedTop - margin;
-    if (selectedTop + kRowHeight - m_scroll > listHeight - margin)
-        m_scroll = selectedTop + kRowHeight - listHeight + margin;
-    if (m_scroll > contentY - listHeight)
-        m_scroll = contentY - listHeight;
-    if (m_scroll < 0.0f)
-        m_scroll = 0.0f;
+    if (selectedTop - scroll < margin)
+        scroll = selectedTop - margin;
+    if (selectedTop + kRowHeight - scroll > listHeight - margin)
+        scroll = selectedTop + kRowHeight - listHeight + margin;
+    if (scroll > contentY - listHeight)
+        scroll = contentY - listHeight;
+    if (scroll < 0.0f)
+        scroll = 0.0f;
 
     float x1 = kLeft, x2 = kLeft + kWidth, y = kTop;
     float height = kHeaderHeight + listHeight + kFooterHeight;
@@ -465,10 +477,10 @@ void Menu::Draw() {
     Ui::GradientV(x1, y, x2, y + height, CRGBA(18, 14, 18, 230), CRGBA(6, 6, 10, 235));
     Ui::Frame(x1, y, x2, y + height, 1.5f, CRGBA(215, 40, 30, 160));
 
-    // header: red gradient + title + energy readout
+    // header: red gradient + title + subtitle + energy readout
     Ui::GradientH(x1, y, x2, y + kHeaderHeight, Ui::kAccent, Ui::kAccentDark);
     Ui::Text(x1 + kPad, y + 6.0f, "Armageddon+", 46.0f, CRGBA(255, 255, 255, 255), Ui::Left, Ui::FontTitle);
-    Ui::Text(x2 - kPad, y + 12.0f, "POWER MENU", 18.0f, CRGBA(255, 220, 210, 230), Ui::Right, Ui::FontHeader);
+    Ui::Text(x2 - kPad, y + 12.0f, subtitle, 18.0f, CRGBA(255, 220, 210, 230), Ui::Right, Ui::FontHeader);
     if (Energy::IsEnabled()) {
         char energy[32];
         std::snprintf(energy, sizeof(energy), "ENERGY %d", (int)std::ceil(Energy::Current()));
@@ -476,10 +488,11 @@ void Menu::Draw() {
     }
     float listTop = y + kHeaderHeight;
 
-    // 3) draw the items that are fully inside the visible window
-    for (const Item& item : items) {
+    // 3) draw the items fully inside the visible window
+    for (size_t i = 0; i < items.size(); ++i) {
+        const ListItem& item = items[i];
         float itemHeight = item.row < 0 ? kSectionHeight : kRowHeight;
-        float top = item.y - m_scroll;
+        float top = tops[i] - scroll;
         if (top < -0.5f || top + itemHeight > listHeight + 0.5f)
             continue;
         float iy = listTop + top;
@@ -489,26 +502,147 @@ void Menu::Draw() {
             Ui::GradientH(lineX, iy + 15.0f, x2 - kPad, iy + 16.5f, CRGBA(215, 40, 30, 180), CRGBA(215, 40, 30, 0));
             continue;
         }
-        if (item.row == powerCount)
+        if (item.gapBefore)
             Ui::Rect(x1 + kPad, iy - 8.0f, x2 - kPad, iy - 6.5f, CRGBA(255, 255, 255, 30));
 
-        bool selected = item.row == m_selected;
+        bool selected = item.row == selectedRow;
         if (selected) {
             // highlight: red glow fading to the right + accent bar on the left
             Ui::GradientH(x1 + 2.0f, iy, x2 - 2.0f, iy + kRowHeight, CRGBA(215, 40, 30, 120), CRGBA(215, 40, 30, 10));
             Ui::Rect(x1 + 2.0f, iy, x1 + 7.0f, iy + kRowHeight, Ui::kAccent);
         }
-        if (item.row < powerCount)
-            DrawPowerRow(m_powers.At(item.row), x1, x2, iy, selected);
-        else
-            DrawSettingRow(item.row - powerCount, x1, x2, iy, selected);
+        drawRow(item.row, x1, x2, iy, selected);
     }
 
     // "more" hints when the list is scrolled
-    if (m_scroll > 0.5f)
+    if (scroll > 0.5f)
         Ui::Text(x2 - kPad, listTop + 2.0f, "^ more", 16.0f, Ui::kTextDim, Ui::Right);
-    if (m_scroll + listHeight < contentY - 0.5f)
+    if (scroll + listHeight < contentY - 0.5f)
         Ui::Text(x2 - kPad, listTop + listHeight - 18.0f, "v more", 16.0f, Ui::kTextDim, Ui::Right);
 
-    DrawFooter(x1, x2, listTop + listHeight + 6.0f);
+    drawFooter(x1, x2, listTop + listHeight + 6.0f);
+}
+
+void Menu::Draw() {
+    if (!m_open)
+        return;
+    if (m_page == Page::Cheats) {
+        DrawCheatsPage();
+        return;
+    }
+
+    // main page: power rows (with a section label wherever the category changes), then settings
+    int powerCount = (int)m_powers.Count();
+    std::vector<ListItem> items;
+    for (int row = 0; row < ItemCount(); ++row) {
+        if (row < powerCount && (row == 0 || std::strcmp(m_powers.At(row).Category(), m_powers.At(row - 1).Category()) != 0))
+            items.push_back({-1, m_powers.At(row).Category(), false});
+        items.push_back({row, nullptr, row == powerCount}); // gap before the settings
+    }
+    DrawList("POWER MENU", items, m_selected, m_scroll,
+             [this, powerCount](int row, float x1, float x2, float y, bool selected) {
+                 if (row < powerCount)
+                     DrawPowerRow(m_powers.At(row), x1, x2, y, selected);
+                 else
+                     DrawSettingRow(row - powerCount, x1, x2, y, selected);
+             },
+             [this](float x1, float x2, float y) { DrawFooter(x1, x2, y); });
+}
+
+// --- cheats page -----------------------------------------------------------------------------
+
+void Menu::UpdateCheats(float dt) {
+    int count = Cheats::Count();
+    if (Repeat(VK_UP, dt, m_heldUp)) {
+        m_cheatSelected = (m_cheatSelected + count - 1) % count;
+        Sound(AE_FRONTEND_HIGHLIGHT);
+    }
+    if (Repeat(VK_DOWN, dt, m_heldDown)) {
+        m_cheatSelected = (m_cheatSelected + 1) % count;
+        Sound(AE_FRONTEND_HIGHLIGHT);
+    }
+    const Cheats::Info& cheat = Cheats::Get(m_cheatSelected);
+    bool apply = Input::JustPressed(VK_RETURN);
+    // Left/Right on a toggle cheat: switch it off / on (Enter flips it either way)
+    if (!cheat.oneTime && Input::JustPressed(VK_LEFT) && Cheats::IsActive(m_cheatSelected))
+        apply = true;
+    if (!cheat.oneTime && Input::JustPressed(VK_RIGHT) && !Cheats::IsActive(m_cheatSelected))
+        apply = true;
+    if (apply) {
+        Cheats::Apply(m_cheatSelected);
+        if (cheat.oneTime)
+            Notice(std::string(cheat.name) + ": done");
+        else
+            Notice(std::string(cheat.name) + (Cheats::IsActive(m_cheatSelected) ? ": ON" : ": OFF"));
+        Sound(AE_FRONTEND_SELECT);
+    }
+    if (Input::JustPressed(VK_BACK)) {
+        m_page = Page::Main; // back to the power menu (F10 closes everything)
+        Sound(AE_FRONTEND_BACK);
+    }
+}
+
+void Menu::DrawCheatRow(int index, float x1, float x2, float y, bool selected) {
+    const Cheats::Info& cheat = Cheats::Get(index);
+    float textY = y + (kRowHeight - kTextSize) * 0.5f - 1.0f;
+    bool active = !cheat.oneTime && Cheats::IsActive(index);
+
+    float dot = 8.0f, dotY = y + (kRowHeight - dot) * 0.5f;
+    if (!cheat.oneTime)
+        Ui::Rect(x1 + kPad, dotY, x1 + kPad + dot, dotY + dot, active ? Ui::kActive : CRGBA(70, 70, 78, 255));
+    CRGBA nameColor = selected ? Ui::kGold : active ? Ui::kText : CRGBA(195, 195, 200, 255);
+    Ui::Text(x1 + kPad + dot + 12.0f, textY, cheat.name, kTextSize * 0.92f, nameColor);
+
+    const char* value = cheat.oneTime ? "USE" : active ? "ON" : "OFF";
+    CRGBA valueColor = cheat.oneTime ? (selected ? Ui::kText : Ui::kTextDim) : active ? Ui::kActive : Ui::kTextDim;
+    Ui::Text(x2 - kPad, textY, value, kTextSize * 0.9f, valueColor, Ui::Right);
+}
+
+void Menu::DrawCheatsFooter(float x1, float x2, float y) {
+    Ui::Rect(x1 + kPad, y, x2 - kPad, y + 1.5f, CRGBA(255, 255, 255, 40));
+    y += 10.0f;
+
+    const Cheats::Info& cheat = Cheats::Get(m_cheatSelected);
+    std::string line;
+    CRGBA color = Ui::kTextDim;
+    if (m_noticeTime > 0.0f) {
+        line = m_notice;
+        color = Ui::kActive;
+    } else if (cheat.oneTime) {
+        line = "One-time cheat: Enter uses it, exactly like typing its code.";
+    } else {
+        line = "Toggle cheat: stays on until you switch it off. Active cheats show in the HUD.";
+    }
+    Ui::Text(x1 + kPad, y, line.c_str(), kSmallSize, color, Ui::Left, Ui::FontBody, (x2 - x1) - kPad * 2.0f);
+    y += (kSmallSize + 6.0f) * 2.0f + 10.0f;
+
+    struct Hint { const char* key; const char* label; };
+    const Hint lines[2][3] = {{{"Up/Down", "select"}, {"Enter", "use / on-off"}, {"Left/Right", "off / on"}},
+                              {{"Bksp", "back to powers"}, {"F10", "close"}, {"", ""}}};
+    float size = kSmallSize * 0.85f;
+    for (const auto& hints : lines) {
+        float x = x1 + kPad;
+        for (const Hint& hint : hints) {
+            if (!*hint.key)
+                continue;
+            x += Ui::KeyBadge(x, y, hint.key, size) + 5.0f;
+            Ui::Text(x, y, hint.label, size, Ui::kTextDim);
+            x += Ui::TextWidth(hint.label, size) + 14.0f;
+        }
+        y += size + 12.0f;
+    }
+}
+
+void Menu::DrawCheatsPage() {
+    std::vector<ListItem> items;
+    for (int i = 0; i < Cheats::Count(); ++i) {
+        if (i == 0 || std::strcmp(Cheats::Get(i).group, Cheats::Get(i - 1).group) != 0)
+            items.push_back({-1, Cheats::Get(i).group, false});
+        items.push_back({i, nullptr, false});
+    }
+    char subtitle[32];
+    std::snprintf(subtitle, sizeof(subtitle), "CHEATS  %d ON", Cheats::ActiveCount());
+    DrawList(subtitle, items, m_cheatSelected, m_cheatScroll,
+             [this](int row, float x1, float x2, float y, bool selected) { DrawCheatRow(row, x1, x2, y, selected); },
+             [this](float x1, float x2, float y) { DrawCheatsFooter(x1, x2, y); });
 }

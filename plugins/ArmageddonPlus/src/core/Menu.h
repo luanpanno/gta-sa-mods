@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <string>
+#include <vector>
 
 class Config;
 class PowerManager;
@@ -44,7 +46,28 @@ private:
     void DrawSettingRow(int setting, float x1, float x2, float y, bool selected);
     void DrawFooter(float x1, float x2, float y);
 
+    // cheats page (opened from the "Cheats" row)
+    void UpdateCheats(float dt);
+    void DrawCheatsPage();
+    void DrawCheatRow(int index, float x1, float x2, float y, bool selected);
+    void DrawCheatsFooter(float x1, float x2, float y);
+
+    // shared by both pages: header, scrolling list with section labels, footer
+    struct ListItem {
+        int row;             // -1 = section label
+        const char* section; // label text (section items only)
+        bool gapBefore;      // small gap + separator above this row
+    };
+    void DrawList(const char* subtitle, const std::vector<ListItem>& items, int selectedRow, float& scroll,
+                  const std::function<void(int row, float x1, float x2, float y, bool selected)>& drawRow,
+                  const std::function<void(float x1, float x2, float y)>& drawFooter);
+
+    enum class Page { Main, Cheats };
+
     PowerManager& m_powers;
+    Page m_page = Page::Main;
+    int m_cheatSelected = 0;
+    float m_cheatScroll = 0.0f;
     int m_key = 0;
     bool m_open = false;
     int m_selected = 0;

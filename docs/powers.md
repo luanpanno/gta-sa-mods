@@ -225,8 +225,27 @@ Every spawnable vehicle in the game (about 200: cars, bikes, boats, planes, heli
 Every weapon CJ can hold, from brass knuckles to the minigun, plus the parachute, night vision and so on. **Enter** gives it with 500 ammo (melee weapons: 1) and makes it CJ's current weapon. Satchel charges come with their detonator.
 - ini: `Weapon` (selected at startup, weapon type ID), `Ammo`.
 
+## Add Ammo
+**←/→** picks `Current +100`, `Current +500`, `All guns +500`, `All guns +1000` or `All guns MAX` (9999), and **Enter** refills. "Current" is the weapon CJ is holding; "All guns" is every gun he carries. Melee weapons are skipped.
+
 ## Add Money
 **←/→** picks $1,000 / $10,000 / $100,000 / $1,000,000 / $10,000,000, and **Enter** adds it. The HUD money counter rolls up like after a mission. It's capped at $999,999,999, the most the HUD can show.
+---
+
+# Cheats
+The **Cheats** row at the bottom of the menu (it shows how many are on, e.g. `3 ON >>`) opens the **cheat page**. It lists all 91 of the game's cheats, grouped: Player, Weapons, Wanted level, Spawn vehicles, Cars & traffic, People & gangs, Weather & time. No codes to type.
+
+| Key | Action |
+|---|---|
+| ↑ / ↓ | Select |
+| Enter | Use a **one-time** cheat (weapon sets, health + $250k, spawning a Rhino, weather...), or switch a **toggle** cheat on/off |
+| ← / → | Toggle cheats: off / on |
+| Backspace | Back to the power menu (F10 closes everything) |
+
+- Toggle cheats (infinite ammo, pink traffic, riot, mega jump...) have a green dot and **ON** while active. The page header shows how many are on.
+- Active toggle cheats are also listed in the HUD under the powers ("CHEATS": up to 6, then "+N more").
+- Using a cheat from here does exactly what typing its code does: the game's own cheat functions run, conflicting cheats switch each other off (pink vs. black traffic, for example), and the game marks you as having cheated, just like typing.
+
 ---
 
 # World mods

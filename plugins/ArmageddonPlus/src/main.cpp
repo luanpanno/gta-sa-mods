@@ -12,6 +12,7 @@
 #include "core/Log.h"
 #include "core/Menu.h"
 #include "core/PowerManager.h"
+#include "powers/AddAmmo.h"
 #include "powers/AddMoney.h"
 #include "powers/BulletTime.h"
 #include "powers/GiveWeapon.h"
@@ -70,6 +71,7 @@ public:
         // spawning tools (own "Spawn" section in the menu): Left/Right pick, Enter use
         g_powers.Register(std::make_unique<SpawnVehicle>());
         g_powers.Register(std::make_unique<GiveWeapon>());
+        g_powers.Register(std::make_unique<AddAmmo>());
         g_powers.Register(std::make_unique<AddMoney>());
         // world mods (own "World" section in the menu)
         g_powers.Register(std::make_unique<Gravity>());
