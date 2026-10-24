@@ -3,6 +3,7 @@
 
 #include "core/Config.h"
 #include "core/Energy.h"
+#include "core/FallGuard.h"
 #include "core/Fx.h"
 #include "core/Hud.h"
 #include "core/Input.h"
@@ -23,6 +24,7 @@
 #include "powers/Force.h"
 #include "powers/Invulnerability.h"
 #include "powers/SpawnVehicle.h"
+#include "powers/SuperJump.h"
 #include "powers/SuperSpeed.h"
 #include "powers/Telekinesis.h"
 #include "world/Chaos.h"
@@ -61,6 +63,7 @@ public:
         // register powers here (order = order in the overlay)
         g_powers.Register(std::make_unique<Flight>());
         g_powers.Register(std::make_unique<SuperSpeed>());
+        g_powers.Register(std::make_unique<SuperJump>()); // after Super Speed: its jump wins when both are on
         g_powers.Register(std::make_unique<ExplosionPunch>());
         g_powers.Register(std::make_unique<Telekinesis>());
         g_powers.Register(std::make_unique<Force>());
@@ -92,6 +95,7 @@ public:
             Input::Update();
             g_menu.Update(RealDt()); // before powers: it pauses their shortcuts
             g_powers.Update();
+            FallGuard::Update(FindPlayerPed()); // ends jump fall-protection on landing
         };
         Events::drawHudEvent += [] { // every frame, while the HUD is drawn
             g_powers.DrawPowers(); // screen effects first, so the HUD draws on top

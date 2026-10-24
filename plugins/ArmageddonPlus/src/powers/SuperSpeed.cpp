@@ -1,6 +1,7 @@
 #include "powers/SuperSpeed.h"
 
 #include "core/Config.h"
+#include "core/FallGuard.h"
 #include "core/Fx.h"
 #include "core/Sound.h"
 #include "core/Log.h"
@@ -109,12 +110,9 @@ void SuperSpeed::UpdateJump(CPlayerPed* player, int lvl) {
     if (m_wasStanding && !standing && player->m_vecMoveSpeed.z > kTakeOffMinZ && m_jumpSpeed[lvl] > 0.0f) {
         player->m_vecMoveSpeed.z = m_jumpSpeed[lvl];
         Sound::Play(Sound::Whoosh, 0.5f + 0.2f * lvl);
-        if (!m_inSuperJump) {
-            // big jumps = big landings: no fall damage until we touch the ground again
-            m_wasCollisionProof = player->bCollisionProof;
-            player->bCollisionProof = true;
-            m_inSuperJump = true;
-        }
+        // big jumps = big landings: no fall damage until he touches the ground again
+        FallGuard::Protect(player);
+        m_inSuperJump = true;
     }
 
     if (standing && m_inSuperJump) {
@@ -129,10 +127,7 @@ void SuperSpeed::UpdateJump(CPlayerPed* player, int lvl) {
 }
 
 void SuperSpeed::EndJump(CPlayerPed* player) {
-    if (!m_inSuperJump)
-        return;
-    player->bCollisionProof = m_wasCollisionProof;
-    m_inSuperJump = false;
+    m_inSuperJump = false; // FallGuard restores his collision state when he lands
 }
 
 void SuperSpeed::OnDeactivate(CPlayerPed* player) {

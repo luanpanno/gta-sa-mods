@@ -58,6 +58,7 @@ Default costs (all tunable in the ini: `[Energy]`, plus `Drain1-3` / `Cost1-3` i
 | Fire Trail | 1.5 /s | 3 /s | 5 /s |
 | Bullet Time | 5 /s | 9 /s | 15 /s |
 | Invulnerability | 3 /s | | |
+| Super Jump | 3 per jump | 5 | 8 |
 | Explosion Punch | 5 per blast | 10 | 18 |
 | Telekinesis | 6 per grab | 10 | 15 |
 | Force Push / Pull | 10 per blast | 16 | 25 |
@@ -110,15 +111,29 @@ CJ runs much faster and jumps much higher. Just run and jump as usual.
 
 | Level | Speed | Jump height |
 |---|---|---|
-| 1 Fast | 2.5x | ~4 m |
-| 2 Faster | 4.5x | ~10 m |
-| 3 Super fast | 8x | ~22 m |
+| 1 Fast | 2.5x | ~10 m |
+| 2 Faster | 4.5x | ~26 m |
+| 3 Super fast | 8x | ~60 m |
 
 - He never gets tired while it's on.
 - No fall damage from super jumps. At high levels, running jumps are also very long.
 - He stops before walls instead of passing through. Pedestrians get shoved aside.
 - While Flight is on, Super Speed stands down.
 - ini: `Multiplier1-3`, `AnimSpeed1-3` (leg speed, visual only), `Jump1-3` (take-off speed; 0 = normal jump).
+
+## Super Jump
+Super jumps without needing Super Speed. Just jump as usual: CJ goes much higher and further, and takes no fall damage until he lands.
+
+| Level | Height | Distance | Landing |
+|---|---|---|---|
+| High | ~19 m | 1.5x | dust |
+| Higher | ~50 m | 2.2x | dust |
+| Sky | ~120 m | 3x | **ground pound**: a 12 m shockwave throws everything around you |
+
+- With Super Speed also on, Super Jump's jump wins, and the run speed still carries into it. Expect huge running jumps.
+- Under Gravity Moon, jumps go even higher.
+- Costs 3 / 5 / 8 energy per jump. With too little energy, CJ just does a normal jump.
+- ini: `Jump1-3` (take-off speed), `Forward1-3` (distance multiplier), `PoundRadius1-3`, `PoundSpeed1-3`, `Cost1-3`.
 
 ## Explosion Punch
 Every melee hit (fists, bat, katana...) **launches the victim** away from CJ, blows it up, sets off a **ring of explosions** around it and sends out a **shockwave** that throws nearby people, cars and objects. Punching a car does the same to the car.

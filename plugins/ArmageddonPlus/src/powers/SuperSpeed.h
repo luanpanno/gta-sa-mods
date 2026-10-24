@@ -35,11 +35,10 @@ private:
     // per level (index 0 = level 1)
     float m_multiplier[kLevels] = {2.5f, 4.5f, 8.0f}; // ground speed vs normal (1 = normal)
     float m_animSpeed[kLevels] = {1.3f, 1.6f, 2.0f};  // leg animation speed (visual)
-    float m_jumpSpeed[kLevels] = {0.25f, 0.40f, 0.60f}; // vertical take-off speed; 0 = normal jump
+    float m_jumpSpeed[kLevels] = {0.40f, 0.65f, 1.00f}; // vertical take-off speed (~10 / 26 / 60 m high); 0 = normal jump
 
     bool m_noFatigue = true;
     bool m_wasTireless = false;   // CJ's "never tired" state before we turned it on, to restore it
     bool m_wasStanding = true;    // last frame's bIsStanding, to detect take-off
-    bool m_inSuperJump = false;   // airborne from a boosted jump (we made him collision-proof)
-    bool m_wasCollisionProof = false;
+    bool m_inSuperJump = false;   // airborne from a boosted jump (for the landing dust)
 };

@@ -23,7 +23,8 @@ Press **F10** in game to open the power menu: **↑/↓** select, **←/→** se
 | Power | Levels | What it does | How to use it once it's on |
 |---|---|---|---|
 | Flight | 3 | Superman-style flight with dive / hover poses | W/S toward/away from the camera, A/D strafe, Space/C up/down |
-| Super Speed | 3 | Run 2.5x / 4.5x / 8x faster, plus super jumps | Run and jump normally |
+| Super Speed | 3 | Run 2.5x / 4.5x / 8x faster, plus super jumps (up to ~60 m) | Run and jump normally |
+| Super Jump | 3 | Jumps up to ~19 / 50 / 120 m high and much longer; level 3 lands with a ground-pound shockwave | Jump normally |
 | Explosion Punch | 3 | Melee hits make the victim explode (cars too) | Punch / hit with a melee weapon |
 | Telekinesis | 3 | Grab, carry and throw cars, people and objects | Aim (RMB) + click (LMB), hold to carry, release to throw |
 | Force Push / Pull | 3 | Shockwave away from or toward CJ | LMB push, RMB pull |
