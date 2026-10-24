@@ -41,6 +41,8 @@ void FireTrail::SetVehicleFireproof(CVehicle* vehicle) {
 }
 
 void FireTrail::Update(CPlayerPed* player, float) {
+    CVehicle* car = player->bInVehicle ? player->m_pVehicle : nullptr;
+    m_moving = car ? car->m_vecMoveSpeed.Magnitude() * 50.0f > 1.0f : player->m_nMoveState >= PEDMOVE_WALK;
     player->bFireProof = true; // re-applied every frame, the game can reset it
 
     CVector firePos;

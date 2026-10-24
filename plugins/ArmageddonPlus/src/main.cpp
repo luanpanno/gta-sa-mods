@@ -7,6 +7,7 @@
 #include "core/Fx.h"
 #include "core/Hud.h"
 #include "core/Input.h"
+#include "core/Leap.h"
 #include "core/Ui.h"
 #include "core/UserSettings.h"
 #include "core/Sound.h"
@@ -95,6 +96,7 @@ public:
             Input::Update();
             g_menu.Update(RealDt()); // before powers: it pauses their shortcuts
             g_powers.Update();
+            Leap::Update(FindPlayerPed());      // drives big jump arcs
             FallGuard::Update(FindPlayerPed()); // ends jump fall-protection on landing
         };
         Events::drawHudEvent += [] { // every frame, while the HUD is drawn

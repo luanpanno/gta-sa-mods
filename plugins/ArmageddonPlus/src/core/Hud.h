@@ -15,5 +15,6 @@ namespace Hud {
 
 void Draw(PowerManager& powers); // top-right block
 void DrawEnergy();               // bottom-center energy bar
+bool GameHidesHud();             // cutscene / widescreen scene / mission hid the HUD: we hide too
 
 } // namespace Hud

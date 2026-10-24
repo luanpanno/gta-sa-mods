@@ -26,9 +26,9 @@ struct LevelInfo {
     float camShake;
 };
 const LevelInfo kLevelInfo[ExplosionPunch::kLevels] = {
-    {EXPLOSION_CAR, EXPLOSION_ROCKET, 0.4f},
-    {EXPLOSION_CAR, EXPLOSION_QUICK_CAR, 0.8f},
-    {EXPLOSION_AIRCRAFT, EXPLOSION_CAR, 1.3f},
+    {EXPLOSION_CAR, EXPLOSION_CAR, 0.6f},
+    {EXPLOSION_AIRCRAFT, EXPLOSION_CAR, 1.1f},
+    {EXPLOSION_AIRCRAFT, EXPLOSION_AIRCRAFT, 1.6f},
 };
 
 bool IsMelee(unsigned int weaponType) {

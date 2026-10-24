@@ -40,9 +40,9 @@ struct LevelInfo {
     bool fire;
 };
 const LevelInfo kLevelInfo[LightningStrike::kLevels] = {
-    {EXPLOSION_CAR, EXPLOSION_ROCKET, 0.6f, false},
-    {EXPLOSION_CAR, EXPLOSION_QUICK_CAR, 1.0f, true},
-    {EXPLOSION_AIRCRAFT, EXPLOSION_CAR, 1.6f, true},
+    {EXPLOSION_CAR, EXPLOSION_CAR, 0.8f, true},
+    {EXPLOSION_AIRCRAFT, EXPLOSION_CAR, 1.3f, true},
+    {EXPLOSION_AIRCRAFT, EXPLOSION_AIRCRAFT, 2.0f, true},
 };
 
 unsigned long long NowMs() {

@@ -40,10 +40,10 @@ private:
     void DrawCrosshair();
 
     // per level (index 0 = level 1)
-    int m_boltCount[kLevels] = {1, 3, 6};                // bolts per strike
-    float m_spread[kLevels] = {0.0f, 7.0f, 12.0f};       // m: how far extra bolts land from the target
-    float m_shockRadius[kLevels] = {12.0f, 20.0f, 32.0f};
-    float m_shockSpeed[kLevels] = {24.0f, 40.0f, 60.0f}; // m/s at the center
+    int m_boltCount[kLevels] = {2, 5, 10};               // bolts per strike
+    float m_spread[kLevels] = {6.0f, 14.0f, 24.0f};      // m: how far extra bolts land from the target
+    float m_shockRadius[kLevels] = {22.0f, 35.0f, 55.0f};
+    float m_shockSpeed[kLevels] = {40.0f, 65.0f, 100.0f}; // m/s at the center
 
     float m_range = 300.0f;     // m
     float m_cooldown = 0.8f;    // real seconds between strikes

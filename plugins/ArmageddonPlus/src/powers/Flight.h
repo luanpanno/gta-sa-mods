@@ -48,8 +48,8 @@ private:
     bool m_usePoses = true;
     bool m_diving = false; // current pose: true = fly anim, false = hover anim
 
-    float m_speed[kLevels] = {12.0f, 30.0f, 60.0f};   // m/s forward
-    float m_climb[kLevels] = {8.0f, 18.0f, 35.0f};    // m/s up/down with SPACE/C
+    float m_speed[kLevels] = {20.0f, 55.0f, 110.0f};  // m/s forward
+    float m_climb[kLevels] = {12.0f, 30.0f, 60.0f};   // m/s up/down with SPACE/C
     float m_responsiveness = 4.0f; // how quickly velocity follows the keys (higher = snappier)
     bool m_followCameraPitch = true;
     int m_ascendKey = 0;

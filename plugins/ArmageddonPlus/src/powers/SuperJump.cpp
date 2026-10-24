@@ -1,7 +1,7 @@
 #include "powers/SuperJump.h"
 
 #include "core/Config.h"
-#include "core/FallGuard.h"
+#include "core/Leap.h"
 #include "core/Fx.h"
 #include "core/Shockwave.h"
 #include "core/Sound.h"
@@ -51,11 +51,12 @@ void SuperJump::Update(CPlayerPed* player, float dt) {
 
     // take-off: was on the ground last frame, now airborne and going up
     if (m_wasStanding && !standing && player->m_vecMoveSpeed.z > kTakeOffMinZ && PayForUse()) {
-        CVector& v = player->m_vecMoveSpeed;
-        v.x *= m_forward[lvl];
-        v.y *= m_forward[lvl];
-        v.z = m_jump[lvl];
-        FallGuard::Protect(player);
+        // sustained arc (see core/Leap.h), keeping a boosted horizontal speed for the whole jump.
+        // Replaces Super Speed's (normal-height) leap if it started one this frame; Super Speed's run
+        // push keeps multiplying the held speed in the air, so running jumps stay fast.
+        CVector takeOff = Leap::TakeOffSpeed(player);
+        CVector horizontal(takeOff.x * m_forward[lvl], takeOff.y * m_forward[lvl], 0.0f);
+        Leap::Start(player, m_jump[lvl], horizontal);
         m_inJump = true;
         m_airTime = 0.0f;
 

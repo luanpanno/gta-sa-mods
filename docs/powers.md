@@ -34,6 +34,7 @@ Shortcuts let you switch powers on and off without opening the menu. They're mos
 - Shortcuts and the two menu settings are saved to `C:\Games\GTA-SA-Modding\ArmageddonPlus.user.ini`. Deploys never overwrite it, and you can delete it to reset everything.
 
 ## The HUD
+- Everything hides during cutscenes and scripted widescreen scenes, and whenever a mission hides the game's HUD.
 - **Top-right:** the **Armageddon+** title and the power list below.
 - **Energy bar** (bottom center, when the energy system is on; also visible while the menu is open): it turns orange below 25%, and flashes red when you try something you can't afford.
 - **Power list:** powers that are **on** (bright, with their level) and powers that have a **shortcut** (dimmed, with their key badge). Powers with neither are hidden, to keep the screen clean. You can switch the list off in the menu.
@@ -43,7 +44,7 @@ Shortcuts let you switch powers on and off without opening the menu. They're mos
 ## Energy
 Powers share one **energy bar** (bottom center of the screen, 0-100).
 
-- **Toggle powers drain it** every second while they're on, and more at higher levels. When it hits 0, they switch off ("Out of energy").
+- **Toggle powers drain it** every second while they're on, and more at higher levels. Super Speed and Fire Trail only drain while CJ is moving. When the bar hits 0, draining powers switch off ("Out of energy").
 - **Actions cost a lump sum:** a punch blast, a force push/pull, a telekinesis grab, a lightning strike. Spawn tools are free. If you don't have enough, the action doesn't happen: you get an error sound and the bar flashes red.
 - **It refills by itself** (8 per second) once you haven't spent anything for 1.5 seconds. Bullet Time doesn't change the drain or refill speed.
 - A draining power needs at least 5 energy to switch on.
@@ -73,7 +74,7 @@ General rules:
 | Power | What you see / hear |
 |---|---|
 | Flight | Whoosh on take-off, dust under CJ while he flies low (helicopter-style downdraft) |
-| Super Speed | Whoosh on super jumps, dust burst when he lands |
+| Super Speed | Dust burst when he lands from a jump |
 | Force | Whoosh out (push) or in (pull), plus a dust shockwave in front of CJ |
 | Telekinesis | Electric zap and a flash on the grabbed thing, whoosh on throws |
 | Lightning Strike | Thunder (louder at higher levels), with the bolt and screen flash |
@@ -97,9 +98,9 @@ Superman-style flight. CJ dives head-first while moving and treads in the air wh
 
 | Level | Speed | Up/down |
 |---|---|---|
-| 1 Cruise | 12 m/s | 8 m/s |
-| 2 Fast | 30 m/s | 18 m/s |
-| 3 Very fast | 60 m/s | 35 m/s |
+| 1 Cruise | 20 m/s | 12 m/s |
+| 2 Fast | 55 m/s | 30 m/s |
+| 3 Very fast | 110 m/s (~400 km/h) | 60 m/s |
 
 - He can't fly through buildings: the game's own collisions apply.
 - He takes no crash or fall damage while flying, and that protection lasts until he next touches the ground. Turning Flight off mid-air is safe.
@@ -107,30 +108,31 @@ Superman-style flight. CJ dives head-first while moving and treads in the air wh
 - ini: `Speed1-3`, `Climb1-3`, `AscendKey`, `DescendKey`, `Responsiveness` (higher = snappier), `FollowCameraPitch=0` (W always flies level), `Poses=0` (no Superman poses).
 
 ## Super Speed
-CJ runs much faster and jumps much higher. Just run and jump as usual.
+CJ runs much faster. Just run as usual. Jumps stay normal height; for high jumps, turn on Super Jump too.
 
-| Level | Speed | Jump height |
-|---|---|---|
-| 1 Fast | 2.5x | ~10 m |
-| 2 Faster | 4.5x | ~26 m |
-| 3 Super fast | 8x | ~60 m |
+| Level | Speed | Swim speed | Speed kept in jumps |
+|---|---|---|---|
+| 1 Fast | 2.5x | 2x | 1.2x |
+| 2 Faster | 4.5x | 3.5x | 1.35x |
+| 3 Super fast | 8x | 6x | 1.5x |
 
 - He never gets tired while it's on.
-- No fall damage from super jumps. At high levels, running jumps are also very long.
+- Jumps don't slow him down: he keeps his run speed in the air, boosted per level (table above), so running jumps are long. He lands on his feet (no fall-over / get-up animation).
 - He stops before walls instead of passing through. Pedestrians get shoved aside.
 - While Flight is on, Super Speed stands down.
-- ini: `Multiplier1-3`, `AnimSpeed1-3` (leg speed, visual only), `Jump1-3` (take-off speed; 0 = normal jump).
+- **Walks on water:** on foot, he stands, walks and runs on lakes and the sea (an invisible platform under his feet). If he's already swimming when you turn it on, he swims faster instead, on the surface and underwater. `WaterWalk=0` turns water walking off.
+- ini: `Multiplier1-3`, `AnimSpeed1-3` (leg speed, visual only), `SwimMultiplier1-3`, `WaterWalk`, `JumpForward1-3` (run speed kept in the air).
 
 ## Super Jump
-Super jumps without needing Super Speed. Just jump as usual: CJ goes much higher and further, and takes no fall damage until he lands.
+Super jumps without needing Super Speed. Just jump as usual: CJ goes much higher and further, and takes no fall damage until he lands. He slows down in the last few meters and lands on his feet, without tripping.
 
 | Level | Height | Distance | Landing |
 |---|---|---|---|
-| High | ~19 m | 1.5x | dust |
-| Higher | ~50 m | 2.2x | dust |
-| Sky | ~120 m | 3x | **ground pound**: a 12 m shockwave throws everything around you |
+| High | ~30 m | 1.5x | dust |
+| Higher | ~83 m | 2.2x | small ground pound (10 m) |
+| Sky | ~130 m | 3x | **ground pound**: a 20 m shockwave throws everything around you |
 
-- With Super Speed also on, Super Jump's jump wins, and the run speed still carries into it. Expect huge running jumps.
+- With Super Speed also on, Super Jump sets the height, and Super Speed's run speed carries through the whole jump with no air slowdown. Expect huge running jumps.
 - Under Gravity Moon, jumps go even higher.
 - Costs 3 / 5 / 8 energy per jump. With too little energy, CJ just does a normal jump.
 - ini: `Jump1-3` (take-off speed), `Forward1-3` (distance multiplier), `PoundRadius1-3`, `PoundSpeed1-3`, `Cost1-3`.
@@ -140,9 +142,9 @@ Every melee hit (fists, bat, katana...) **launches the victim** away from CJ, bl
 
 | Level | Each punch |
 |---|---|
-| 1 | Car-bomb blast, 2-blast ring (3 m), 10 m shockwave at 18 m/s, victim launched at 25 m/s |
-| 2 | Car-bomb blast, 4-blast ring (5 m), 16 m shockwave at 30 m/s, victim launched at 40 m/s |
-| 3 | Aircraft-size blast, 7-blast ring (8 m), 26 m shockwave at 48 m/s, victim launched at 60 m/s |
+| 1 | Car-bomb blast, 3-blast ring (5 m), 18 m shockwave at 30 m/s, victim launched at 40 m/s |
+| 2 | Aircraft-size blast, 6-blast ring (9 m), 30 m shockwave at 50 m/s, victim launched at 65 m/s |
+| 3 | Aircraft-size blast, 10 aircraft-size blasts in a 14 m ring, 45 m shockwave at 80 m/s, victim launched at 100 m/s |
 
 - CJ is immune to explosions while it's on, including enemy rockets.
 - Guns don't trigger it.
@@ -189,9 +191,9 @@ Every melee hit (fists, bat, katana...) **launches the victim** away from CJ, bl
 
 | Level | Strike |
 |---|---|
-| 1 | 1 bolt, car-bomb-size blast, 12 m shockwave at 24 m/s |
-| 2 | 3 bolts within 7 m, car-bomb blasts + fire, 20 m shockwave at 40 m/s |
-| 3 | **Storm:** 6 bolts within 12 m, aircraft-size blast on the target, fire everywhere, 32 m shockwave at 60 m/s |
+| 1 | 2 bolts within 6 m, car-bomb blasts + fire, 22 m shockwave at 40 m/s |
+| 2 | 5 bolts within 14 m, aircraft-size main blast + fire, 35 m shockwave at 65 m/s |
+| 3 | **Storm:** 10 bolts within 24 m, all aircraft-size blasts, fire everywhere, 55 m shockwave at 100 m/s |
 
 - Pointing at the sky does nothing, because there's nothing to hit.
 - CJ is explosion-proof while Lightning Strike is on, so striking right next to yourself is safe.
@@ -277,7 +279,7 @@ Gravity for everything: CJ, people, cars, objects, debris.
 | Zero-G | 2%: things barely come down |
 | Heavy | 250% |
 
-Combines well with Super Speed (huge moon jumps) and Force (cars drifting away in Zero-G).
+Combines well with Super Speed or Super Jump (huge moon jumps) and Force (cars drifting away in Zero-G).
 - ini: `Moon`, `Mars`, `ZeroG`, `Heavy` (multipliers).
 
 ## Vehicle Handling
@@ -328,6 +330,6 @@ Mission characters aren't affected. Note that Invulnerability counts as a superp
 - **Superman:** Flight 2 + Invulnerability + Force (push from the air).
 - **Max Payne:** Bullet Time 2 + Explosion Punch 1.
 - **Storm god:** Flight 1 (hover high) + Lightning Strike 3.
-- **Moonwalker:** Gravity Moon + Super Speed 2: jumps over buildings.
+- **Moonwalker:** Gravity Moon + Super Speed 2 + Super Jump 1: jumps over buildings.
 - **Armageddon:** Chaos Meteors + Invulnerability + Bullet Time 1.
 - **Stunt driver:** Vehicle Handling Rocket + Gravity Mars + jump off a ramp.

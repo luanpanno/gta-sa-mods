@@ -27,6 +27,10 @@ core/
   Input         keyboard/mouse sampled once per frame: IsDown / JustPressed / JustReleased
   Power         base class of every power (+ its Drain/Cost per level, PayForUse())
   Energy        the shared energy pool: drain, costs, regen, HUD bar, on/off
+  Leap          big jump arcs: drives CJ's upward speed (v0 - g*t) every frame until the peak,
+                because a single take-off kick gets damped away by the in-air ped physics
+  FallGuard     shared "no fall damage until he lands" for all jump powers
+  Shockwave     throws every ped/vehicle/object in a radius (Force, punch, lightning, ground pound)
   Fx            one-off particle effects from the game's effects.fxp (g_fxMan.CreateFxSystem + PlayAndKill)
   Sound         synthesized sounds (noise + filters + envelopes -> in-memory WAV), played through
                 BASS (bass.dll, shipped with CLEO, loaded at runtime); PlaySound fallback
@@ -89,7 +93,7 @@ It shows up in the menu automatically.
 | Power | Technique |
 |---|---|
 | `Flight` | Gravity off (`bApplyGravity`). Every frame, `m_vecMoveSpeed` eases toward the key direction (camera-relative), and the game's physics moves CJ **with collisions**. Collision-proof until he lands (`UpdateAlways`). Poses: `FALL_SkyDive_Accel` (PARACHUTE) while moving and `Swim_Tread` (PED) while hovering, via `TASK_PLAY_ANIM_NON_INTERRUPTABLE`, restarted if interrupted. |
-| `SuperSpeed` | After the game moves CJ, push him further the same way (`MultiplierN`), with two line-of-sight checks (waist and knee) so he never enters walls. Leg anims sped up, fatigue off. Super jump: on take-off (was standing, now airborne going up), the vertical speed is replaced with `JumpN`, collision-proof until landing. |
+| `SuperSpeed` | After the game moves CJ, push him further the same way (`MultiplierN`), with two line-of-sight checks (waist and knee) so he never enters walls. Leg anims sped up, fatigue off. Jumps: on take-off (was standing, now airborne going up), a normal-height `Leap` that holds the run speed x `JumpForwardN` (no air drag) and soft-lands; Super Jump's leap replaces it when both are on (`Leap::TakeOffSpeed` keeps the boosts from stacking). |
 | `ExplosionPunch` | Tracks the health of nearby peds and vehicles. A drop + `m_pLastEntityDamage == CJ` + melee weapon = a punch → `CExplosion::AddExplosion` at the victim. |
 | `Telekinesis` | Gives a non-firing Desert Eagle for the crosshair (the previous slot weapon is saved and restored). The ray comes from `CCamera::Find3rdPersonCamTargetVector` + `CWorld::ProcessLineOfSight` (`pIgnoreEntity` = CJ). The held entity gets gravity off and a velocity toward a point along the aim. Releasing throws it. |
 | `Force` | Everything in a ~140° cone within the radius gets a velocity away from or toward CJ, plus lift. Peds are lifted 0.3 m first so physics moves them, not their walk animation. |

@@ -58,6 +58,8 @@ public:
     // Energy (see core/Energy.h). Values come from the ini: Drain1..3 / Cost1..3 (or Drain / Cost).
     static constexpr int kMaxLevels = 3;
     float DrainPerSecond() const; // while on, at the current level
+    // false = on but idle right now (e.g. Super Speed while CJ stands still): no drain this frame
+    virtual bool IsDraining() const { return true; }
     float CostPerUse() const;     // one action, at the current level
     // Call before an action (a blast, a strike, a grab...). false = not enough energy: skip the action.
     bool PayForUse() const;

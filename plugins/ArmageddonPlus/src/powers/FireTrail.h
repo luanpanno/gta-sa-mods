@@ -24,6 +24,7 @@ public:
     void OnActivate(CPlayerPed* player) override;
     void Update(CPlayerPed* player, float dt) override;
     void OnDeactivate(CPlayerPed* player) override;
+    bool IsDraining() const override { return m_moving; } // standing still costs nothing
 
 private:
     void SetVehicleFireproof(CVehicle* vehicle);
@@ -33,6 +34,7 @@ private:
     float m_spacing = 1.5f;                         // meters between flames
 
     CVector m_lastFire;
+    bool m_moving = false; // moving this frame (drives energy drain)
     bool m_hasLastFire = false;
     bool m_wasFireProof = false;
     CVehicle* m_vehicle = nullptr; // vehicle we made fireproof

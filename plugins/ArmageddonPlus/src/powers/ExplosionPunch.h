@@ -32,11 +32,11 @@ private:
     void Explode(CPlayerPed* player, CEntity* victim);
 
     // per level (index 0 = level 1)
-    int m_ringBlasts[kLevels] = {2, 4, 7};            // extra explosions around the victim
-    float m_ringRadius[kLevels] = {3.0f, 5.0f, 8.0f};  // m
-    float m_shockRadius[kLevels] = {10.0f, 16.0f, 26.0f};
-    float m_shockSpeed[kLevels] = {18.0f, 30.0f, 48.0f}; // m/s at the center
-    float m_launch[kLevels] = {25.0f, 40.0f, 60.0f};     // m/s: the victim flies away from CJ
+    int m_ringBlasts[kLevels] = {3, 6, 10};           // extra explosions around the victim
+    float m_ringRadius[kLevels] = {5.0f, 9.0f, 14.0f}; // m
+    float m_shockRadius[kLevels] = {18.0f, 30.0f, 45.0f};
+    float m_shockSpeed[kLevels] = {30.0f, 50.0f, 80.0f}; // m/s at the center
+    float m_launch[kLevels] = {40.0f, 65.0f, 100.0f};    // m/s: the victim flies away from CJ
 
     float m_radius = 6.0f;      // only things this close to CJ are checked (a punch is ~1-2 m)
     float m_cooldown = 0.25f;   // seconds between explosions, so one swing = one blast

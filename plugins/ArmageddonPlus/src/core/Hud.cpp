@@ -6,6 +6,11 @@
 #include "core/Ui.h"
 #include "cheats/Cheats.h"
 
+#include "plugin.h"
+#include "CCamera.h"
+#include "CCutsceneMgr.h"
+#include "CTheScripts.h"
+
 #include <algorithm>
 
 #include <cmath>
@@ -30,9 +35,8 @@ void DrawEnergyBar() {
     float barTop = Ui::ScreenHeight() - 46.0f, barBottom = barTop + barHeight;
     float fraction = Energy::Max() > 0.0f ? Energy::Current() / Energy::Max() : 0.0f;
 
-    // soft dark backdrop behind the whole thing
-    Ui::GradientH(barLeft - 140.0f, barTop - 10.0f, barLeft + barWidth * 0.5f, barBottom + 10.0f, CRGBA(0, 0, 0, 0), CRGBA(0, 0, 0, 140));
-    Ui::GradientH(barLeft + barWidth * 0.5f, barTop - 10.0f, barRight + 140.0f, barBottom + 10.0f, CRGBA(0, 0, 0, 140), CRGBA(0, 0, 0, 0));
+    // one dark panel behind label + bar + value (drawn first, everything else goes on top)
+    Ui::Rect(barLeft - 110.0f, barTop - 9.0f, barRight + 62.0f, barBottom + 9.0f, CRGBA(0, 0, 0, 120));
 
     // fill: blue, orange when low, red flash after a failed spend
     CRGBA top(90, 175, 255, 240), bottom(30, 90, 200, 240);
@@ -63,7 +67,14 @@ void DrawEnergyBar() {
 
 namespace Hud {
 
+bool GameHidesHud() {
+    // cutscenes, scripted widescreen scenes, or a mission that switched the HUD off
+    return CCutsceneMgr::ms_running || TheCamera.m_bWideScreenOn || !CTheScripts::bDisplayHud;
+}
+
 void Draw(PowerManager& powers) {
+    if (GameHidesHud())
+        return;
     float right = Ui::ScreenWidth() - kMarginRight;
     float y = kTop;
 
@@ -140,7 +151,7 @@ void Draw(PowerManager& powers) {
 }
 
 void DrawEnergy() {
-    if (Energy::IsEnabled())
+    if (Energy::IsEnabled() && !GameHidesHud())
         DrawEnergyBar();
 }
 

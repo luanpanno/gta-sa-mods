@@ -2,6 +2,8 @@
 
 #include "plugin.h"
 #include "CPlayerPed.h"
+#include "CPools.h"
+#include "extensions/ScriptCommands.h"
 
 namespace {
 bool g_protecting = false;
@@ -29,6 +31,10 @@ void Update(CPlayerPed* player) {
     if (landed || player->bInVehicle || player->m_fHealth <= 0.0f) {
         player->bCollisionProof = g_wasCollisionProof;
         g_protecting = false;
+        // landed on his feet: cancel the fall-over / get-up the game may have started for a big
+        // landing (same as CLEO's clear_char_tasks_immediately), so he can run on right away
+        if (landed && !player->bInVehicle && player->m_fHealth > 0.0f && !player->bTouchingWater)
+            plugin::Command<plugin::Commands::CLEAR_CHAR_TASKS_IMMEDIATELY>(CPools::GetPedRef(player));
     }
 }
 

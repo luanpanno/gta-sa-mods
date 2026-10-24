@@ -140,7 +140,8 @@ void PowerManager::Update() {
     Energy::Update(realDt);
 
     for (auto& power : m_powers) {
-        if (power->m_active && power->DrainPerSecond() > 0.0f && !Energy::Drain(power->DrainPerSecond() * realDt)) {
+        if (power->m_active && power->DrainPerSecond() > 0.0f && power->IsDraining() &&
+            !Energy::Drain(power->DrainPerSecond() * realDt)) {
             SetActive(*power, player, false);
             static char message[64]; // static: CMessages keeps the pointer while it's on screen
             std::snprintf(message, sizeof(message), "~r~Out of energy:~s~ %s", power->Name());
