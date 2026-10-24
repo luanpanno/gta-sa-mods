@@ -18,6 +18,14 @@ class ExplosionPunch : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    ExplosionPunch() {
+        AddSetting("Victim launch speed", "Launch", m_launch, true, 0.0f, 200.0f, 5.0f, "m/s"); // Customize page
+        AddSetting("Ring explosions", "RingBlasts", m_ringBlasts, true, 0, 20, "");
+        AddSetting("Ring radius", "RingRadius", m_ringRadius, true, 2.0f, 30.0f, 1.0f, "m");
+        AddSetting("Shockwave radius", "ShockRadius", m_shockRadius, true, 0.0f, 80.0f, 1.0f, "m");
+        AddSetting("Shockwave force", "ShockSpeed", m_shockSpeed, true, 0.0f, 150.0f, 5.0f, "m/s");
+    }
+
     const char* Name() const override { return "Explosion Punch"; }
     const char* Id() const override { return "ExplosionPunch"; }
     const char* Description() const override { return "Melee hits make people and cars explode"; }

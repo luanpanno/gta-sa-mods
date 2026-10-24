@@ -18,7 +18,7 @@ Mods for **Grand Theft Auto: San Andreas** (PC), built step by step: from small 
 ## What's included
 
 ### ArmageddonPlus: superpowers (C++ plugin)
-Press **F10** in game to open the power menu: **↑/↓** select, **←/→** set the level, **Enter** toggles, **Insert** binds a shortcut key (e.g. X: Flight off → 1 → 2 → 3 → off), **Backspace** closes. Full controls and tips: [docs/powers.md](docs/powers.md).
+Press **F10** in game to open the power menu: **↑/↓** select, **←/→** set the level, **Enter** toggles, **Insert** binds a shortcut key (e.g. X: Flight off → 1 → 2 → 3 → off), **C** customizes the power (speed, height, radius... up to the max, saved), **Backspace** closes. Full controls and tips: [docs/powers.md](docs/powers.md).
 
 | Power | Levels | What it does | How to use it once it's on |
 |---|---|---|---|

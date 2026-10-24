@@ -47,6 +47,7 @@ void PowerManager::LoadConfig(const Config& config) {
             power->m_cost[i] = config.GetFloat(section, key, cost);
         }
         power->LoadConfig(config, section);
+        power->SnapshotSettingDefaults(); // the Customize page's "Reset" goes back to these
         Log::Info("Power %-16s key=%s", power->Id(), Config::KeyName(power->m_key));
     }
 }

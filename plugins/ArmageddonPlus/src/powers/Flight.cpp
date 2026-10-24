@@ -11,8 +11,10 @@
 #include "CPlayerPed.h"
 #include "CPools.h"
 #include "CTimer.h"
+#include "CWorld.h"
 #include "extensions/ScriptCommands.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -62,6 +64,7 @@ void Flight::OnActivate(CPlayerPed* player) {
     }
     m_diving = false;
     m_velocity = CVector(0.0f, 0.0f, 0.0f);
+    m_climbExpected = 0.0f;
     if (!m_landingGuard)
         m_wasCollisionProof = player->bCollisionProof;
     m_landingGuard = false;
@@ -98,6 +101,18 @@ void Flight::Update(CPlayerPed* player, float dt) {
     player->bApplyGravity = false; // re-applied every frame, the game can reset it
     player->bCollisionProof = true;
 
+    // climbing: the game damps a ped's upward speed (peds aren't built to rise), so a fast climb came
+    // out far slower than Climb/Speed asked. Measure how much he actually rose since last frame and
+    // make up the rest by moving him, unless something solid is above him.
+    CVector pos = player->GetPosition();
+    if (m_climbExpected > 0.0f) {
+        float missing = std::min(m_climbExpected - (pos.z - m_lastZ), m_climbExpected);
+        CVector to = pos + CVector(0.0f, 0.0f, missing);
+        if (missing > 0.01f &&
+            CWorld::GetIsLineOfSightClear(pos, to + CVector(0.0f, 0.0f, 1.0f), true, true, false, true, false, false, false))
+            player->SetPosn(to);
+    }
+
     // --- where the keys point ----------------------------------------------------------
     CPad* pad = CPad::GetPad(0);
     // walk axes: -128..128; forward (W) is negative
@@ -128,6 +143,8 @@ void Flight::Update(CPlayerPed* player, float dt) {
     // the game moves CJ by this velocity during the next physics update, with collisions.
     // Physics steps are shortened by the time scale, so scale the velocity up to compensate.
     player->m_vecMoveSpeed = m_velocity / (kStepsPerSecond * timeScale);
+    m_lastZ = player->GetPosition().z;
+    m_climbExpected = m_velocity.z > 0.0f ? m_velocity.z * realDt : 0.0f; // checked next frame
 
     // face the direction of travel
     if (m_velocity.Magnitude2D() > 1.0f) {
@@ -168,6 +185,7 @@ void Flight::StopFlying(CPlayerPed* player) {
         return;
     player->bApplyGravity = true;
     m_flying = false;
+    m_climbExpected = 0.0f;
     if (m_usePoses) {
         // drop the pose so the game's normal falling/landing takes over
         // (not when dead or in a car: clearing tasks there would mess with dying / driving)

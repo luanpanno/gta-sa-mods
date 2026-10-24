@@ -17,6 +17,11 @@ class BulletTime : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    BulletTime() {
+        // Customize page. Min 5%: below that the physics gets unstable
+        AddSetting("Game speed", "Scale", m_scale, true, 5.0f, 100.0f, 5.0f, "%", Display::Percent);
+    }
+
     const char* Name() const override { return "Bullet Time"; }
     const char* Id() const override { return "BulletTime"; }
     const char* Description() const override { return "The world slows down, CJ keeps moving at normal speed"; }

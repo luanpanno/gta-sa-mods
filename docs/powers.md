@@ -12,14 +12,43 @@ Press **F10** to open the power menu. While it's open, CJ stands still, and powe
 | Enter | Toggle the selected power on/off (back on at its last level), or fire a one-shot power (Spawn Vehicle) |
 | Insert (or B) | **Bind a shortcut** to the selected power: the menu says "press a key...", and the next key you press becomes its shortcut |
 | Delete | Remove the selected power's shortcut |
+| C | **Customize** the selected power (see below) |
 | Backspace or F10 | Close (while binding: cancel) |
 
 Each row shows a green dot when the power is on, its shortcut as a key badge (e.g. `[X]`), and its level as pips (■■□) or a level name ("Moon"). The bottom of the menu describes the selected power and lists these keys.
 
 The bottom of the menu also has:
-- **Energy system:** On/Off. Off means infinite energy.
+- **Energy system:** On/Off (off by default). Off means infinite energy.
 - **HUD power list:** the list in the top-right corner.
+- **Fog:** Off = no distance fog, clear view up to the draw distance (also clears the haze in foggy weather). Saved like the other settings.
 - **Close menu**.
+
+## Customize
+Select a power in the menu and press **C** to open its Customize page: every tuning value (speed, height, radius, force...) as a slider, from its minimum up to the **max**, the most the game handles well. A full gold bar means the value is at the max.
+
+| Key | Action |
+|---|---|
+| ↑ / ↓ | Select a value |
+| ← / → | Lower / raise it (hold Shift: 10x bigger steps) |
+| Home / End | Jump to the minimum / the max |
+| 0-9 | Type an exact value, then **Enter** (`.` or `,` for decimals; Backspace deletes; out-of-range values are clamped) |
+| Backspace | Back to the power list |
+
+- **Editing level** (top row): each level has its own values. Pick the level, then change its values. Settings marked "every level" (e.g. Flight's responsiveness) are shared.
+- Changes apply right away, even while the power is on, and are saved to `ArmageddonPlus.user.ini`.
+- **Reset to defaults** puts back the values from `ArmageddonPlus.ini`.
+
+| Power | What you can customize (max) |
+|---|---|
+| Flight | Speed (250 m/s), up/down speed (150 m/s), responsiveness |
+| Super Speed | Run speed (30x), leg animation, swim speed (20x), speed kept in jumps (4x) |
+| Super Jump | Height (400 m), distance (8x), ground pound radius (60 m) and force |
+| Explosion Punch | Victim launch speed, ring explosions (20), ring radius, shockwave radius (80 m) and force |
+| Telekinesis | Throw speed (250 m/s), grab range (300 m) |
+| Force Push / Pull | Radius (80 m), push and pull force |
+| Lightning Strike | Bolts per strike (25), spread, shockwave radius (100 m) and force |
+| Fire Trail | Flame duration (20 s) |
+| Bullet Time | Game speed (5% = slowest) |
 
 ## Shortcuts
 Shortcuts let you switch powers on and off without opening the menu. They're most useful for the "always on" kind, like Flight, Super Speed or Bullet Time.
@@ -31,7 +60,7 @@ Shortcuts let you switch powers on and off without opening the menu. They're mos
 - One key can only belong to one power. Binding a key that's already in use moves it, and the footer tells you from which power.
 - You can't bind keys the menu uses (arrows, Enter, Insert, Delete, F10), mouse buttons or **F1**. F1 makes GTA SA stop reading the keyboard.
 - Avoid keys the game uses on foot or in cars (W/A/S/D, F, Space, C, Tab, Q/E...). Good picks: X, Z, V, G, the number keys, the numpad.
-- Shortcuts and the two menu settings are saved to `C:\Games\GTA-SA-Modding\ArmageddonPlus.user.ini`. Deploys never overwrite it, and you can delete it to reset everything.
+- Shortcuts, the menu settings and Customize values are saved to `C:\Games\GTA-SA-Modding\ArmageddonPlus.user.ini`. Deploys never overwrite it, and you can delete it to reset everything.
 
 ## The HUD
 - Everything hides during cutscenes and scripted widescreen scenes, and whenever a mission hides the game's HUD.
@@ -42,13 +71,13 @@ Shortcuts let you switch powers on and off without opening the menu. They're mos
 - Everything (menu and HUD) scales with `[Menu] Scale` in the ini: 1.0 is the default, and you can try 1.2 on a big screen.
 
 ## Energy
-Powers share one **energy bar** (bottom center of the screen, 0-100).
+**Off by default** (infinite energy, no bar). Turn **Energy system** on in the menu, or set `[Energy] Enabled=1` in the ini, for powers to cost energy. Powers then share one **energy bar** (bottom center of the screen, 0-100).
 
 - **Toggle powers drain it** every second while they're on, and more at higher levels. Super Speed and Fire Trail only drain while CJ is moving. When the bar hits 0, draining powers switch off ("Out of energy").
 - **Actions cost a lump sum:** a punch blast, a force push/pull, a telekinesis grab, a lightning strike. Spawn tools are free. If you don't have enough, the action doesn't happen: you get an error sound and the bar flashes red.
 - **It refills by itself** (8 per second) once you haven't spent anything for 1.5 seconds. Bullet Time doesn't change the drain or refill speed.
 - A draining power needs at least 5 energy to switch on.
-- Don't like it? Turn **Energy system** off in the menu.
+- Want it off again? Turn **Energy system** off in the menu.
 
 Default costs (all tunable in the ini: `[Energy]`, plus `Drain1-3` / `Cost1-3` in each power's section):
 
@@ -103,6 +132,7 @@ Superman-style flight. CJ dives head-first while moving and treads in the air wh
 | 3 Very fast | 110 m/s (~400 km/h) | 60 m/s |
 
 - He can't fly through buildings: the game's own collisions apply.
+- Climbing reaches the full Up/down speed (and the full Speed when diving upward): the game slows peds that rise, so Flight makes up the difference each frame.
 - He takes no crash or fall damage while flying, and that protection lasts until he next touches the ground. Turning Flight off mid-air is safe.
 - Getting into a vehicle stops flight.
 - ini: `Speed1-3`, `Climb1-3`, `AscendKey`, `DescendKey`, `Responsiveness` (higher = snappier), `FollowCameraPitch=0` (W always flies level), `Poses=0` (no Superman poses).

@@ -24,6 +24,13 @@ class Flight : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    Flight() {
+        // Customize page (menu). Max = about the fastest the game streams the map in for.
+        AddSetting("Speed", "Speed", m_speed, true, 5.0f, 250.0f, 5.0f, "m/s");
+        AddSetting("Up / down speed", "Climb", m_climb, true, 5.0f, 150.0f, 5.0f, "m/s");
+        AddSetting("Responsiveness", "Responsiveness", &m_responsiveness, false, 1.0f, 15.0f, 0.5f, "");
+    }
+
     const char* Name() const override { return "Flight"; }
     const char* Id() const override { return "Flight"; }
     const char* Description() const override { return "W/S fly where the camera looks, A/D strafe, Space/C up/down, no keys = hover"; }
@@ -56,6 +63,8 @@ private:
     int m_descendKey = 0;
 
     CVector m_velocity;            // current velocity, m/s
+    float m_lastZ = 0.0f;          // height after last frame's update...
+    float m_climbExpected = 0.0f;  // ...and how much he should have risen since (m), to catch damping
     float m_dustTimer = 0.0f;      // seconds until the next downdraft dust puff
     bool m_flying = false;         // we turned gravity off
     bool m_landingGuard = false;   // collision-proof until CJ touches the ground

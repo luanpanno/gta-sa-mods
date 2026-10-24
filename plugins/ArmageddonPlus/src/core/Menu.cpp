@@ -2,6 +2,7 @@
 
 #include "core/Config.h"
 #include "core/Energy.h"
+#include "core/Fog.h"
 #include "core/Input.h"
 #include "core/Log.h"
 #include "core/PowerManager.h"
@@ -14,7 +15,9 @@
 #include "CPlayerPed.h"
 #include "extensions/ScriptCommands.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -24,7 +27,7 @@ using namespace plugin;
 namespace {
 
 // rows after the powers
-enum SettingRow { ROW_CHEATS, ROW_ENERGY, ROW_OVERLAY, ROW_CLOSE, SETTING_ROWS };
+enum SettingRow { ROW_CHEATS, ROW_ENERGY, ROW_OVERLAY, ROW_FOG, ROW_CLOSE, SETTING_ROWS };
 
 // layout, in Ui reference units (pixels on a 1080-pixel-tall screen, times [Menu] Scale)
 const float kLeft = 48.0f;
@@ -88,6 +91,7 @@ void Menu::Open() {
     }
     m_open = true;
     m_binding = false;
+    m_typing = false;
     m_page = Page::Main;
     // No walking/driving with the arrows, no Enter = enter car. Same game command as
     // CLEO's set_player_control (opcode 01B4).
@@ -102,6 +106,24 @@ void Menu::Close() {
     Command<Commands::SET_PLAYER_CONTROL>(0, true);
     m_powers.SetHotkeysEnabled(true);
     Sound(AE_FRONTEND_BACK);
+}
+
+void Menu::HoldPlayer(CPlayerPed* player) {
+    // only on foot, standing on something: in the air he finishes his jump/fall, flying hovers by itself
+    bool hold = m_open && player && !player->bInVehicle && player->bIsStanding && player->bApplyGravity;
+    if (!hold) {
+        m_holding = false; // anchor again once he's standing
+        return;
+    }
+    CVector pos = player->GetPosition();
+    if (!m_holding) {
+        m_holding = true;
+        m_holdX = pos.x;
+        m_holdY = pos.y;
+    }
+    player->SetPosn(CVector(m_holdX, m_holdY, pos.z)); // height left to the game (slopes, platforms)
+    player->m_vecMoveSpeed.x = 0.0f;
+    player->m_vecMoveSpeed.y = 0.0f;
 }
 
 bool Menu::Repeat(int vk, float dt, float& heldTime) {
@@ -152,6 +174,9 @@ void Menu::Activate() {
     case ROW_OVERLAY:
         ChangeValue(m_powers.IsOverlayEnabled() ? -1 : +1);
         break;
+    case ROW_FOG:
+        ChangeValue(Fog::IsEnabled() ? -1 : +1);
+        break;
     case ROW_CLOSE:
         Close();
         break;
@@ -197,6 +222,11 @@ void Menu::ChangeValue(int delta) {
     case ROW_OVERLAY:
         m_powers.SetOverlayEnabled(delta > 0);
         UserSettings::SaveOverlayEnabled(delta > 0);
+        Sound(AE_FRONTEND_HIGHLIGHT);
+        break;
+    case ROW_FOG:
+        Fog::SetEnabled(delta > 0);
+        UserSettings::SaveFogEnabled(delta > 0);
         Sound(AE_FRONTEND_HIGHLIGHT);
         break;
     }
@@ -267,6 +297,10 @@ void Menu::Update(float dt) {
         UpdateCheats(dt);
         return;
     }
+    if (m_page == Page::Customize) {
+        UpdateCustomize(dt);
+        return;
+    }
     int count = ItemCount();
     if (Repeat(VK_UP, dt, m_heldUp)) {
         m_selected = (m_selected + count - 1) % count;
@@ -284,6 +318,15 @@ void Menu::Update(float dt) {
         Activate();
 
     bool onPower = m_selected < (int)m_powers.Count();
+    if (onPower && Input::JustPressed('C')) {
+        if (m_powers.At(m_selected).SettingCount() > 0) {
+            OpenCustomize(m_selected);
+        } else {
+            Notice(std::string(m_powers.At(m_selected).Name()) + " has nothing to customize");
+            Sound(AE_FRONTEND_ERROR);
+        }
+        return;
+    }
     if (onPower && (Input::JustPressed(VK_INSERT) || Input::JustPressed('B'))) {
         m_binding = true; // keys are read from the NEXT frame, so Insert itself isn't bound
         Sound(AE_FRONTEND_SELECT);
@@ -389,6 +432,11 @@ void Menu::DrawSettingRow(int setting, float x1, float x2, float y, bool selecte
         on = m_powers.IsOverlayEnabled();
         value = on ? "ON" : "OFF";
         break;
+    case ROW_FOG:
+        label = "Fog";
+        on = Fog::IsEnabled();
+        value = on ? "ON" : "OFF (clear view)";
+        break;
     case ROW_CLOSE:
         label = "Close menu";
         break;
@@ -428,12 +476,15 @@ void Menu::DrawFooter(float x1, float x2, float y) {
 
     // lines 2-3: key hints as badges
     struct Hint { const char* key; const char* label; };
-    const Hint lines[2][3] = {{{"Up/Down", "select"}, {"Left/Right", "level"}, {"Enter", "on/off"}},
-                              {{"Ins", "bind shortcut"}, {"Del", "remove shortcut"}, {"Bksp", "close"}}};
+    bool customizable = m_selected < (int)m_powers.Count() && m_powers.At(m_selected).SettingCount() > 0;
+    const Hint lines[2][4] = {{{"Up/Down", "select"}, {"Left/Right", "level"}, {"Enter", "on/off"}, {"Bksp", "close"}},
+                              {{"Ins", "bind"}, {"Del", "unbind"}, {customizable ? "C" : "", "customize"}, {"", ""}}};
     float size = kSmallSize * 0.85f;
     for (const auto& hints : lines) {
         float x = x1 + kPad;
         for (const Hint& hint : hints) {
+            if (!*hint.key)
+                continue;
             x += Ui::KeyBadge(x, y, hint.key, size) + 5.0f;
             Ui::Text(x, y, hint.label, size, Ui::kTextDim);
             x += Ui::TextWidth(hint.label, size) + 14.0f;
@@ -532,6 +583,10 @@ void Menu::Draw() {
         return;
     if (m_page == Page::Cheats) {
         DrawCheatsPage();
+        return;
+    }
+    if (m_page == Page::Customize) {
+        DrawCustomizePage();
         return;
     }
 
@@ -649,4 +704,325 @@ void Menu::DrawCheatsPage() {
     DrawList(subtitle, items, m_cheatSelected, m_cheatScroll,
              [this](int row, float x1, float x2, float y, bool selected) { DrawCheatRow(row, x1, x2, y, selected); },
              [this](float x1, float x2, float y) { DrawCheatsFooter(x1, x2, y); });
+}
+// --- customize page --------------------------------------------------------------------------
+
+void Menu::OpenCustomize(int powerIndex) {
+    Power& power = m_powers.At(powerIndex);
+    m_customPower = powerIndex;
+    // edit the level it's on (or comes back at): the one you're most likely tuning
+    m_customLevel = power.IsActive() && power.Level() > 0 ? power.Level() : power.LastLevel();
+    if (m_customLevel < 1 || m_customLevel > power.MaxLevel())
+        m_customLevel = 1;
+    m_customSelected = 0;
+    m_customScroll = 0.0f;
+    m_typing = false;
+    m_page = Page::Customize;
+    Sound(AE_FRONTEND_SELECT);
+}
+
+// rows: [level picker], one per setting, Reset, Back
+int Menu::CustomRowCount() const {
+    const Power& power = m_powers.At(m_customPower);
+    bool levelRow = power.HasPerLevelSettings() && power.MaxLevel() > 1;
+    return (levelRow ? 1 : 0) + power.SettingCount() + 2;
+}
+
+Menu::CustomRow Menu::CustomRowKind(int row, int* settingIndex) const {
+    const Power& power = m_powers.At(m_customPower);
+    if (power.HasPerLevelSettings() && power.MaxLevel() > 1) {
+        if (row == 0)
+            return CustomRow::Level;
+        --row;
+    }
+    if (row < power.SettingCount()) {
+        if (settingIndex)
+            *settingIndex = row;
+        return CustomRow::Setting;
+    }
+    return row == power.SettingCount() ? CustomRow::Reset : CustomRow::Back;
+}
+
+std::string Menu::FormatSetting(const Power& power, int setting, float shown) const {
+    const Power::Setting& info = power.GetSetting(setting);
+    int decimals = info.step >= 1.0f ? 0 : info.step >= 0.1f ? 1 : 2;
+    bool space = *info.unit && info.unit[0] != 'x' && info.unit[0] != '%'; // "30 m/s", but "4.5x", "35%"
+    char text[32];
+    std::snprintf(text, sizeof(text), "%.*f%s%s", decimals, shown, space ? " " : "", info.unit);
+    return text;
+}
+
+void Menu::StepSetting(int setting, int delta, bool toEnd) {
+    Power& power = m_powers.At(m_customPower);
+    const Power::Setting& info = power.GetSetting(setting);
+    float shown = power.SettingShown(setting, m_customLevel);
+    float next;
+    if (toEnd) {
+        next = delta > 0 ? info.max : info.min;
+    } else {
+        int steps = Input::IsDown(VK_SHIFT) ? delta * 10 : delta; // Shift = big steps
+        next = std::round(shown / info.step + steps) * info.step;  // stays on the step grid
+    }
+    next = std::clamp(next, info.min, info.max);
+    if (std::fabs(next - shown) < info.step * 0.01f) {
+        Sound(AE_FRONTEND_ERROR); // already at the end
+        return;
+    }
+    power.SetSettingShown(setting, m_customLevel, next);
+    UserSettings::SaveSetting(power, setting, m_customLevel);
+    Sound(AE_FRONTEND_HIGHLIGHT);
+}
+
+void Menu::ApplyTyped(int setting) {
+    Power& power = m_powers.At(m_customPower);
+    const Power::Setting& info = power.GetSetting(setting);
+    std::string text = m_typed;
+    m_typing = false;
+    if (text.empty() || text == ".")
+        return;
+    float value = (float)std::atof(text.c_str());
+    float clamped = std::clamp(value, info.min, info.max);
+    power.SetSettingShown(setting, m_customLevel, clamped);
+    UserSettings::SaveSetting(power, setting, m_customLevel);
+    if (clamped != value)
+        Notice(std::string(clamped > value ? "Min is " : "Max is ") + FormatSetting(power, setting, clamped));
+    Sound(AE_FRONTEND_SELECT);
+}
+
+void Menu::UpdateTyping(int setting) {
+    // digits from the number row or the numpad; '.' or ',' (decimal comma keyboards) for decimals
+    for (int vk = 0; vk < 256; ++vk) {
+        if (!Input::JustPressed(vk))
+            continue;
+        char c = 0;
+        if (vk >= '0' && vk <= '9')
+            c = (char)vk;
+        else if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9)
+            c = (char)('0' + vk - VK_NUMPAD0);
+        else if (vk == VK_OEM_PERIOD || vk == VK_DECIMAL || vk == VK_OEM_COMMA)
+            c = '.';
+        if (!c)
+            continue;
+        if (!m_typing) {
+            m_typing = true;
+            m_typed.clear();
+        }
+        bool secondDot = c == '.' && m_typed.find('.') != std::string::npos;
+        if (m_typed.size() < 8 && !secondDot)
+            m_typed += c;
+        Sound(AE_FRONTEND_HIGHLIGHT);
+    }
+}
+
+void Menu::UpdateCustomize(float dt) {
+    Power& power = m_powers.At(m_customPower);
+    int count = CustomRowCount();
+    int setting = -1;
+    CustomRow kind = CustomRowKind(m_customSelected, &setting);
+
+    if (m_typing) {
+        // typing a value: digits, Enter (apply), Backspace (delete / cancel); arrows cancel
+        UpdateTyping(setting);
+        if (Input::JustPressed(VK_RETURN)) {
+            ApplyTyped(setting);
+        } else if (Input::JustPressed(VK_BACK)) {
+            m_typed.pop_back();
+            if (m_typed.empty())
+                m_typing = false;
+            Sound(AE_FRONTEND_BACK);
+        } else if (Input::JustPressed(VK_UP) || Input::JustPressed(VK_DOWN) || Input::JustPressed(VK_LEFT) ||
+                   Input::JustPressed(VK_RIGHT)) {
+            m_typing = false;
+            Sound(AE_FRONTEND_BACK);
+        }
+        return;
+    }
+
+    if (Repeat(VK_UP, dt, m_heldUp)) {
+        m_customSelected = (m_customSelected + count - 1) % count;
+        Sound(AE_FRONTEND_HIGHLIGHT);
+    }
+    if (Repeat(VK_DOWN, dt, m_heldDown)) {
+        m_customSelected = (m_customSelected + 1) % count;
+        Sound(AE_FRONTEND_HIGHLIGHT);
+    }
+    kind = CustomRowKind(m_customSelected, &setting);
+
+    int delta = 0;
+    if (Repeat(VK_LEFT, dt, m_heldLeft))
+        delta = -1;
+    if (Repeat(VK_RIGHT, dt, m_heldRight))
+        delta = +1;
+    switch (kind) {
+    case CustomRow::Level:
+        if (delta) {
+            int level = m_customLevel + delta;
+            if (level >= 1 && level <= power.MaxLevel()) {
+                m_customLevel = level;
+                Sound(AE_FRONTEND_HIGHLIGHT);
+            } else {
+                Sound(AE_FRONTEND_ERROR);
+            }
+        }
+        break;
+    case CustomRow::Setting:
+        if (delta)
+            StepSetting(setting, delta, false);
+        if (Input::JustPressed(VK_HOME))
+            StepSetting(setting, -1, true);
+        if (Input::JustPressed(VK_END))
+            StepSetting(setting, +1, true);
+        UpdateTyping(setting);
+        if (m_typing)
+            return;
+        break;
+    case CustomRow::Reset:
+        if (Input::JustPressed(VK_RETURN)) {
+            power.ResetSettings();
+            UserSettings::ClearSettings(power);
+            Notice(std::string(power.Name()) + ": back to the default values");
+            Sound(AE_FRONTEND_SELECT);
+        }
+        break;
+    case CustomRow::Back:
+        if (Input::JustPressed(VK_RETURN)) {
+            m_page = Page::Main;
+            Sound(AE_FRONTEND_BACK);
+            return;
+        }
+        break;
+    }
+    if (Input::JustPressed(VK_BACK)) {
+        m_page = Page::Main; // back to the power menu (F10 closes everything)
+        Sound(AE_FRONTEND_BACK);
+    }
+}
+
+void Menu::DrawCustomRow(int row, float x1, float x2, float y, bool selected) {
+    const Power& power = m_powers.At(m_customPower);
+    float textY = y + (kRowHeight - kTextSize) * 0.5f - 1.0f;
+    float labelX = x1 + kPad + 20.0f;
+    float right = x2 - kPad;
+    int setting = -1;
+    CRGBA labelColor = selected ? Ui::kGold : Ui::kText;
+
+    switch (CustomRowKind(row, &setting)) {
+    case CustomRow::Level: {
+        Ui::Text(labelX, textY, "Editing level", kTextSize, labelColor);
+        if (selected) {
+            Ui::Text(right, textY, ">", kTextSize, Ui::kGold, Ui::Right);
+            right -= 18.0f;
+        }
+        right -= Ui::Pips(right, y + kRowHeight * 0.5f - 5.0f, power.MaxLevel(), m_customLevel, 10.0f, Ui::kActive) + 12.0f;
+        char value[40];
+        if (power.LevelName(m_customLevel))
+            std::snprintf(value, sizeof(value), "%s", power.LevelName(m_customLevel));
+        else
+            std::snprintf(value, sizeof(value), "LVL %d", m_customLevel);
+        Ui::Text(right, textY, value, kTextSize * 0.9f, Ui::kActive, Ui::Right);
+        if (selected)
+            Ui::Text(right - Ui::TextWidth(value, kTextSize * 0.9f) - 8.0f, textY, "<", kTextSize, Ui::kGold, Ui::Right);
+        break;
+    }
+    case CustomRow::Setting: {
+        const Power::Setting& info = power.GetSetting(setting);
+        float shown = power.SettingShown(setting, m_customLevel);
+        Ui::Text(labelX, textY, info.label, kTextSize * 0.9f, labelColor);
+
+        // on the right: < value [slider from min to max] >
+        std::string value;
+        CRGBA valueColor = Ui::kText;
+        if (selected && m_typing) {
+            value = m_typed + (std::fmod(m_blink, 0.8f) < 0.5f ? "_" : " ");
+            valueColor = Ui::kGold;
+        } else {
+            value = FormatSetting(power, setting, shown);
+        }
+        if (selected && !m_typing) {
+            Ui::Text(right, textY, ">", kTextSize, Ui::kGold, Ui::Right);
+            right -= 18.0f;
+        }
+        const float barWidth = 110.0f;
+        float barLeft = right - barWidth;
+        float barY = y + kRowHeight * 0.5f - 3.0f;
+        float fill = info.max > info.min ? (shown - info.min) / (info.max - info.min) : 0.0f;
+        fill = std::clamp(fill, 0.0f, 1.0f);
+        Ui::Rect(barLeft, barY, right, barY + 6.0f, CRGBA(255, 255, 255, 35));
+        Ui::GradientH(barLeft, barY, barLeft + barWidth * fill, barY + 6.0f, Ui::kAccentDark,
+                      fill >= 0.999f ? Ui::kGold : Ui::kAccent); // gold = at the max
+        float valueRight = barLeft - 10.0f;
+        Ui::Text(valueRight, textY, value.c_str(), kTextSize * 0.85f, valueColor, Ui::Right);
+        if (selected && !m_typing)
+            Ui::Text(valueRight - Ui::TextWidth(value.c_str(), kTextSize * 0.85f) - 8.0f, textY, "<", kTextSize,
+                     Ui::kGold, Ui::Right);
+        break;
+    }
+    case CustomRow::Reset:
+        Ui::Text(labelX, textY, "Reset to defaults", kTextSize, labelColor);
+        break;
+    case CustomRow::Back:
+        Ui::Text(labelX, textY, "Back", kTextSize, labelColor);
+        break;
+    }
+}
+
+void Menu::DrawCustomFooter(float x1, float x2, float y) {
+    const Power& power = m_powers.At(m_customPower);
+    Ui::Rect(x1 + kPad, y, x2 - kPad, y + 1.5f, CRGBA(255, 255, 255, 40));
+    y += 10.0f;
+
+    int setting = -1;
+    CustomRow kind = CustomRowKind(m_customSelected, &setting);
+    std::string line;
+    CRGBA color = Ui::kTextDim;
+    if (m_noticeTime > 0.0f) {
+        line = m_notice;
+        color = Ui::kActive;
+    } else if (kind == CustomRow::Setting) {
+        const Power::Setting& info = power.GetSetting(setting);
+        line = "From " + FormatSetting(power, setting, info.min) + " to " + FormatSetting(power, setting, info.max) +
+               " (max). ";
+        if (m_typing) {
+            line += "Enter: apply, Bksp: delete, arrows: cancel.";
+            color = Ui::kGold;
+        } else if (info.perLevel && power.MaxLevel() > 1) {
+            line += "Level " + std::to_string(m_customLevel) + " only. Saved; applies right away.";
+        } else {
+            line += "Every level. Saved; applies right away.";
+        }
+    } else if (kind == CustomRow::Level) {
+        line = "Each level has its own values: pick the one to edit.";
+    } else if (kind == CustomRow::Reset) {
+        line = "Enter: put every value back to the ini defaults.";
+    }
+    Ui::Text(x1 + kPad, y, line.c_str(), kSmallSize, color, Ui::Left, Ui::FontBody, (x2 - x1) - kPad * 2.0f);
+    y += (kSmallSize + 6.0f) * 2.0f + 10.0f;
+
+    struct Hint { const char* key; const char* label; };
+    const Hint lines[2][3] = {{{"Up/Down", "select"}, {"Left/Right", "change"}, {"Shift", "faster"}},
+                              {{"Home/End", "min/max"}, {"0-9", "type a value"}, {"Bksp", "back"}}};
+    float size = kSmallSize * 0.85f;
+    for (const auto& hints : lines) {
+        float x = x1 + kPad;
+        for (const Hint& hint : hints) {
+            x += Ui::KeyBadge(x, y, hint.key, size) + 5.0f;
+            Ui::Text(x, y, hint.label, size, Ui::kTextDim);
+            x += Ui::TextWidth(hint.label, size) + 14.0f;
+        }
+        y += size + 12.0f;
+    }
+}
+
+void Menu::DrawCustomizePage() {
+    const Power& power = m_powers.At(m_customPower);
+    std::vector<ListItem> items;
+    items.push_back({-1, power.Name(), false});
+    bool levelRow = CustomRowKind(0, nullptr) == CustomRow::Level;
+    for (int row = 0; row < CustomRowCount(); ++row) {
+        bool gap = CustomRowKind(row, nullptr) == CustomRow::Reset || (levelRow && row == 1);
+        items.push_back({row, nullptr, gap});
+    }
+    DrawList("CUSTOMIZE", items, m_customSelected, m_customScroll,
+             [this](int row, float x1, float x2, float y, bool selected) { DrawCustomRow(row, x1, x2, y, selected); },
+             [this](float x1, float x2, float y) { DrawCustomFooter(x1, x2, y); });
 }

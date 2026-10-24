@@ -4,6 +4,7 @@
 #include "core/Config.h"
 #include "core/Energy.h"
 #include "core/FallGuard.h"
+#include "core/Fog.h"
 #include "core/Fx.h"
 #include "core/Hud.h"
 #include "core/Input.h"
@@ -98,6 +99,8 @@ public:
             g_powers.Update();
             Leap::Update(FindPlayerPed());      // drives big jump arcs
             FallGuard::Update(FindPlayerPed()); // ends jump fall-protection on landing
+            g_menu.HoldPlayer(FindPlayerPed()); // last: keeps CJ in place while the menu is open
+            Fog::Update();                      // after the game's time cycle, before rendering
         };
         Events::drawHudEvent += [] { // every frame, while the HUD is drawn
             g_powers.DrawPowers(); // screen effects first, so the HUD draws on top

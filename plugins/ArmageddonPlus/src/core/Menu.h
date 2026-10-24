@@ -5,6 +5,7 @@
 #include <vector>
 
 class Config;
+class CPlayerPed;
 class PowerManager;
 class Power;
 
@@ -16,6 +17,7 @@ class Power;
 //   Enter            toggle the selected power (on at its last level), or fire a one-shot power
 //   Insert or B      bind a shortcut key to the selected power ("press a key...")
 //   Delete           remove the selected power's shortcut
+//   C                customize the selected power (speeds, heights, radius... per level, saved)
 //   Backspace        close (or cancel binding)
 //
 // While it's open CJ's controls are disabled (the arrows/Enter would move him or enter cars)
@@ -28,6 +30,9 @@ public:
     void LoadConfig(const Config& config);
     void Update(float dt); // call from Events::gameProcessEvent, after Input::Update()
     void Draw();           // call from Events::drawHudEvent
+    // While open: pin CJ where he stood (controls off alone doesn't stop momentum, the run
+    // animation finishing, or powers pushing him). Call every frame, after the powers.
+    void HoldPlayer(CPlayerPed* player);
 
     bool IsOpen() const { return m_open; }
     int Key() const { return m_key; }
@@ -62,10 +67,32 @@ private:
                   const std::function<void(int row, float x1, float x2, float y, bool selected)>& drawRow,
                   const std::function<void(float x1, float x2, float y)>& drawFooter);
 
-    enum class Page { Main, Cheats };
+    // customize page (C on a power row): sliders for the power's settings (see Power::AddSetting)
+    enum class CustomRow { Level, Setting, Reset, Back };
+    void OpenCustomize(int powerIndex);
+    int CustomRowCount() const;
+    CustomRow CustomRowKind(int row, int* settingIndex) const;
+    void UpdateCustomize(float dt);
+    void StepSetting(int setting, int delta, bool toEnd); // Left/Right, Home/End
+    void UpdateTyping(int setting);                      // digits typed on a setting row
+    void ApplyTyped(int setting);
+    void DrawCustomizePage();
+    void DrawCustomRow(int row, float x1, float x2, float y, bool selected);
+    void DrawCustomFooter(float x1, float x2, float y);
+    std::string FormatSetting(const Power& power, int setting, float shown) const;
+
+    enum class Page { Main, Cheats, Customize };
 
     PowerManager& m_powers;
     Page m_page = Page::Main;
+    int m_customPower = 0;       // index in m_powers
+    int m_customLevel = 1;       // which level's values the page edits
+    int m_customSelected = 0;
+    float m_customScroll = 0.0f;
+    bool m_holding = false;      // HoldPlayer has a position to keep him at
+    float m_holdX = 0.0f, m_holdY = 0.0f;
+    bool m_typing = false;       // typing a value on the selected setting
+    std::string m_typed;
     int m_cheatSelected = 0;
     float m_cheatScroll = 0.0f;
     int m_key = 0;

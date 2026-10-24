@@ -23,6 +23,11 @@ class Telekinesis : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    Telekinesis() {
+        AddSetting("Throw speed", "ThrowSpeed", m_throwSpeed, true, 10.0f, 250.0f, 5.0f, "m/s"); // Customize page
+        AddSetting("Grab range", "Range", &m_range, false, 10.0f, 300.0f, 10.0f, "m");
+    }
+
     const char* Name() const override { return "Telekinesis"; }
     const char* Id() const override { return "Telekinesis"; }
     const char* Description() const override { return "Aim (RMB) + click (LMB) to grab, hold to carry, release to throw"; }

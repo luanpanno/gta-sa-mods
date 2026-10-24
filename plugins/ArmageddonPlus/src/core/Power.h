@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 class CPlayerPed;
 class Config;
 
@@ -64,7 +66,47 @@ public:
     // Call before an action (a blast, a strike, a grab...). false = not enough energy: skip the action.
     bool PayForUse() const;
 
+    // Customize page (menu): tuning values the player can change in game, from Min to Max (Max = as
+    // far as the game copes with). A power lists them once, in its constructor, with AddSetting().
+    // They point at the same members LoadConfig fills, so a change applies right away.
+    enum class Display {
+        Plain,      // shown as stored
+        Percent,    // stored 0..1, shown 0..100 %
+        JumpHeight, // stored as take-off speed (m/step), shown as the height it reaches (m)
+    };
+    struct Setting {
+        const char* label;  // "Run speed"
+        const char* key;    // ini key: "Multiplier" -> Multiplier1..3 when per level, else just the key
+        float* floats;      // storage (an array of kMaxLevels when per level), or nullptr
+        int* ints;          // ... or an int one
+        bool perLevel;
+        float min, max, step; // in shown units
+        const char* unit;   // "x", "m/s"...
+        Display display;
+        float defaults[kMaxLevels]; // stored values after the main ini loaded (for Reset)
+    };
+    int SettingCount() const { return (int)m_settings.size(); }
+    const Setting& GetSetting(int index) const { return m_settings[index]; }
+    bool HasPerLevelSettings() const;
+    // level = 1..MaxLevel (ignored by settings that aren't per level)
+    float SettingShown(int index, int level) const;
+    void SetSettingShown(int index, int level, float shown); // clamped to min..max
+    float SettingStored(int index, int level) const;
+    void SetSettingStored(int index, int level, float stored);
+    void SettingKey(int index, int level, char* out, int size) const; // ini key, e.g. "Multiplier3"
+    void ResetSettings();
+    void SnapshotSettingDefaults(); // after LoadConfig: what Reset goes back to
+
+protected:
+    void AddSetting(const char* label, const char* key, float* values, bool perLevel, float min, float max,
+                    float step, const char* unit, Display display = Display::Plain);
+    void AddSetting(const char* label, const char* key, int* values, bool perLevel, int min, int max,
+                    const char* unit);
+
 private:
+    float* StoragePtr(int index, int level, int** intOut) const;
+    std::vector<Setting> m_settings;
+
     friend class PowerManager;
     int LevelIndex() const; // 0-based, safe for OneShot powers (level 0)
 

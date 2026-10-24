@@ -15,6 +15,12 @@ class Force : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    Force() {
+        AddSetting("Radius", "Radius", m_radius, true, 5.0f, 80.0f, 1.0f, "m"); // Customize page
+        AddSetting("Push force", "PushSpeed", m_pushSpeed, true, 5.0f, 150.0f, 5.0f, "m/s");
+        AddSetting("Pull force", "PullSpeed", m_pullSpeed, true, 5.0f, 100.0f, 5.0f, "m/s");
+    }
+
     const char* Name() const override { return "Force Push / Pull"; }
     const char* Id() const override { return "Force"; }
     const char* Description() const override { return "LMB pushes everything in front away, RMB pulls it toward you"; }

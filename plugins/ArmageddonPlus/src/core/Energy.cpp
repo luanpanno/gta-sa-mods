@@ -42,7 +42,7 @@ void Fail() {
 namespace Energy {
 
 void LoadConfig(const Config& config) {
-    g_enabled = config.GetBool("Energy", "Enabled", true);
+    g_enabled = config.GetBool("Energy", "Enabled", false); // off by default: infinite energy
     g_max = config.GetFloat("Energy", "Max", g_max);
     g_regen = config.GetFloat("Energy", "Regen", g_regen);
     g_regenDelay = config.GetFloat("Energy", "RegenDelay", g_regenDelay);

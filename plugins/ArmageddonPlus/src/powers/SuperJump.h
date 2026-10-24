@@ -14,6 +14,13 @@ class SuperJump : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    SuperJump() {
+        AddSetting("Height", "Jump", m_jump, true, 5.0f, 400.0f, 5.0f, "m", Display::JumpHeight); // Customize page
+        AddSetting("Distance", "Forward", m_forward, true, 1.0f, 8.0f, 0.1f, "x");
+        AddSetting("Ground pound radius", "PoundRadius", m_poundRadius, true, 0.0f, 60.0f, 1.0f, "m");
+        AddSetting("Ground pound force", "PoundSpeed", m_poundSpeed, true, 0.0f, 150.0f, 5.0f, "m/s");
+    }
+
     const char* Name() const override { return "Super Jump"; }
     const char* Id() const override { return "SuperJump"; }
     const char* Description() const override { return "Jump as usual: much higher and longer; level 3 lands with a ground-pound shockwave"; }

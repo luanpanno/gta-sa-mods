@@ -15,6 +15,13 @@
 class LightningStrike : public Power {
 public:
     static constexpr int kLevels = 3;
+
+    LightningStrike() {
+        AddSetting("Bolts per strike", "Bolts", m_boltCount, true, 1, 25, ""); // Customize page
+        AddSetting("Bolt spread", "Spread", m_spread, true, 0.0f, 60.0f, 1.0f, "m");
+        AddSetting("Shockwave radius", "ShockRadius", m_shockRadius, true, 0.0f, 100.0f, 1.0f, "m");
+        AddSetting("Shockwave force", "ShockSpeed", m_shockSpeed, true, 0.0f, 150.0f, 5.0f, "m/s");
+    }
     static constexpr int kBoltPoints = 14;
 
     const char* Name() const override { return "Lightning Strike"; }

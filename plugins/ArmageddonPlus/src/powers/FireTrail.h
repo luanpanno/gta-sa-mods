@@ -15,6 +15,10 @@ class FireTrail : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    FireTrail() {
+        AddSetting("Flame duration", "Duration", m_duration, true, 0.5f, 20.0f, 0.5f, "s"); // Customize page
+    }
+
     const char* Name() const override { return "Fire Trail"; }
     const char* Id() const override { return "FireTrail"; }
     const char* Description() const override { return "Leave a trail of fire on foot or behind your car; you are fireproof"; }

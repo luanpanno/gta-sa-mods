@@ -22,6 +22,15 @@ class SuperSpeed : public Power {
 public:
     static constexpr int kLevels = 3;
 
+    SuperSpeed() {
+        // Customize page (menu). Max run speed ~ 210 m/s sprinting: the wall checks still work and
+        // the map still streams in; past that he outruns the world.
+        AddSetting("Run speed", "Multiplier", m_multiplier, true, 1.0f, 30.0f, 0.5f, "x");
+        AddSetting("Leg animation", "AnimSpeed", m_animSpeed, true, 0.5f, 4.0f, 0.1f, "x");
+        AddSetting("Swim speed", "SwimMultiplier", m_swimMultiplier, true, 1.0f, 20.0f, 0.5f, "x");
+        AddSetting("Speed kept in jumps", "JumpForward", m_jumpForward, true, 1.0f, 4.0f, 0.05f, "x");
+    }
+
     const char* Name() const override { return "Super Speed"; }
     const char* Id() const override { return "SuperSpeed"; }
     const char* Description() const override { return "Run much faster and walk on water; running jumps keep the speed"; }
