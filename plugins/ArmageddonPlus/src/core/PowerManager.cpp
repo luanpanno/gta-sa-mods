@@ -150,9 +150,11 @@ void PowerManager::Update() {
         int key = m_hotkeysEnabled ? power->m_key : 0;
         switch (power->GetMode()) {
         case Power::Mode::Toggle:
-            // shortcut: on (at the last level used) / off. Levels are picked in the menu.
-            if (Input::JustPressed(key))
-                SetLevel(*power, player, power->m_active ? 0 : power->m_lastLevel);
+            // shortcut: off -> level 1 -> 2 -> ... -> max -> off (no levels: just on / off)
+            if (Input::JustPressed(key)) {
+                int next = power->m_active ? power->m_level + 1 : 1;
+                SetLevel(*power, player, next > power->MaxLevel() ? 0 : next);
+            }
             break;
         case Power::Mode::Hold:
             if (m_hotkeysEnabled)

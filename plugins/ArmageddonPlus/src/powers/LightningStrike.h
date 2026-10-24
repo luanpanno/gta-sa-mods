@@ -3,6 +3,8 @@
 #include "core/Power.h"
 #include "CVector.h"
 
+#include <vector>
+
 // Phase 3.9: Lightning Strike. Turn it on in the menu, then point the camera (the crosshair in the
 // middle of the screen) and click LMB: a lightning bolt hits that spot and blows it up.
 // 3 levels = blast size (grenade / rocket / car bomb + fire).
@@ -28,15 +30,26 @@ public:
     void Draw() override;
 
 private:
+    struct Bolt {
+        CVector points[kBoltPoints]; // sky -> ground
+    };
+
     void Strike(CPlayerPed* player);
-    void DrawBolt(float age);
+    void AddBolt(const CVector& target);
+    void DrawBolt(const Bolt& bolt, float age);
     void DrawCrosshair();
+
+    // per level (index 0 = level 1)
+    int m_boltCount[kLevels] = {1, 3, 6};                // bolts per strike
+    float m_spread[kLevels] = {0.0f, 7.0f, 12.0f};       // m: how far extra bolts land from the target
+    float m_shockRadius[kLevels] = {12.0f, 20.0f, 32.0f};
+    float m_shockSpeed[kLevels] = {24.0f, 40.0f, 60.0f}; // m/s at the center
 
     float m_range = 300.0f;     // m
     float m_cooldown = 0.8f;    // real seconds between strikes
     char m_hadFireDisabled = 0;
+    bool m_wasExplosionProof = false;
 
     unsigned long long m_lastStrikeMs = 0;  // real time (unaffected by Bullet Time)
-    CVector m_bolt[kBoltPoints];            // sky -> ground
-    bool m_hasBolt = false;
+    std::vector<Bolt> m_bolts;              // bolts of the last strike, drawn for a moment
 };

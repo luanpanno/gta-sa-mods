@@ -6,8 +6,9 @@
 
 class CEntity;
 
-// Phase 3.3: CJ's melee hits (fists, bat, katana...) make the victim explode. 3 levels:
-// 1 grenade-size, 2 rocket-size, 3 car-bomb-size with camera shake.
+// Phase 3.3: CJ's melee hits (fists, bat, katana...) make the victim explode. Each punch:
+// launches the victim away, a big blast on them + a ring of blasts around, and a shockwave that
+// throws everything nearby. Levels scale it all (level 3 = aircraft-size blast + 7-blast ring).
 //
 // How a hit is detected: the game records on every ped/vehicle who damaged it last
 // (m_pLastEntityDamage / m_pLastDamageEntity) and with which weapon. Each frame we look at
@@ -29,6 +30,13 @@ public:
 
 private:
     void Explode(CPlayerPed* player, CEntity* victim);
+
+    // per level (index 0 = level 1)
+    int m_ringBlasts[kLevels] = {2, 4, 7};            // extra explosions around the victim
+    float m_ringRadius[kLevels] = {3.0f, 5.0f, 8.0f};  // m
+    float m_shockRadius[kLevels] = {10.0f, 16.0f, 26.0f};
+    float m_shockSpeed[kLevels] = {18.0f, 30.0f, 48.0f}; // m/s at the center
+    float m_launch[kLevels] = {25.0f, 40.0f, 60.0f};     // m/s: the victim flies away from CJ
 
     float m_radius = 6.0f;      // only things this close to CJ are checked (a punch is ~1-2 m)
     float m_cooldown = 0.25f;   // seconds between explosions, so one swing = one blast

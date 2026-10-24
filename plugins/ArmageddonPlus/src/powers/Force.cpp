@@ -5,6 +5,7 @@
 #include "core/Sound.h"
 #include "core/Input.h"
 #include "core/Log.h"
+#include "core/Shockwave.h"
 
 #include "plugin.h"
 #include "CCamera.h"
@@ -49,53 +50,18 @@ void Force::Blast(CPlayerPed* player, bool pull) {
     forward.z = 0.0f;
     forward.Normalize();
 
-    int count = 0;
-    auto affect = [&](CPhysical* entity) {
-        CVector offset = entity->GetPosition() - center;
-        float distance = offset.Magnitude();
-        if (distance > radius || distance < 0.5f)
-            return;
-        CVector away = offset / distance;
-        if (away.Dot(forward) < 0.3f)
-            return; // only what's in front (a ~140 degree cone)
-
-        CVector velocity;
-        if (pull) {
-            // toward CJ; slower when it's already close so it lands near him instead of on him
-            float strength = m_pullSpeed[lvl] * (0.4f + 0.6f * distance / radius);
-            velocity = away * -strength;
-            velocity.z = strength * 0.25f;
-        } else {
-            float strength = m_pushSpeed[lvl] * (1.0f - distance / radius * 0.6f); // weaker at the edge
-            velocity = away * strength;
-            velocity.z = strength * 0.35f; // and up, so things fly instead of sliding
-        }
-
-        entity->SetIsStatic(false); // parked cars / placed objects are asleep until woken
-        if (entity->m_nType == ENTITY_TYPE_PED) {
-            // lift peds a bit so they leave the ground and physics (not their walk animation) moves them
-            CVector pos = entity->GetPosition();
-            entity->SetPosn(pos.x, pos.y, pos.z + 0.3f);
-        }
-        entity->m_vecMoveSpeed = velocity / kStepsPerSecond;
-        ++count;
-    };
-
-    auto* peds = CPools::ms_pPedPool;
-    for (int i = 0; i < peds->m_nSize; ++i) {
-        CPed* ped = peds->GetAt(i);
-        if (ped && ped != player && !ped->bInVehicle)
-            affect(ped);
+    Shockwave::Params params;
+    params.radius = radius;
+    params.pull = pull;
+    params.cone = &forward; // only what's in front of CJ
+    if (pull) {
+        params.speed = m_pullSpeed[lvl];
+        params.lift = 0.25f;
+    } else {
+        params.speed = m_pushSpeed[lvl];
+        params.lift = 0.35f;
     }
-    auto* vehicles = CPools::ms_pVehiclePool;
-    for (int i = 0; i < vehicles->m_nSize; ++i)
-        if (CVehicle* vehicle = vehicles->GetAt(i))
-            affect(vehicle);
-    auto* objects = CPools::ms_pObjectPool;
-    for (int i = 0; i < objects->m_nSize; ++i)
-        if (CObject* object = objects->GetAt(i))
-            affect(object);
-
+    int count = Shockwave::Blast(center, params, player);
     // feedback: a dust shockwave in front of CJ + whoosh (outward for push, inward for pull)
     CVector ground;
     CVector front = center + forward * (pull ? radius * 0.5f : 3.0f);

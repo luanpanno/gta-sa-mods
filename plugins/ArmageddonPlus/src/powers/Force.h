@@ -29,9 +29,9 @@ public:
 private:
     void Blast(CPlayerPed* player, bool pull);
 
-    float m_radius[kLevels] = {10.0f, 16.0f, 25.0f};   // m
-    float m_pushSpeed[kLevels] = {12.0f, 22.0f, 40.0f}; // m/s at the center
-    float m_pullSpeed[kLevels] = {10.0f, 16.0f, 26.0f}; // m/s
+    float m_radius[kLevels] = {14.0f, 24.0f, 40.0f};   // m
+    float m_pushSpeed[kLevels] = {25.0f, 45.0f, 80.0f}; // m/s at the center
+    float m_pullSpeed[kLevels] = {16.0f, 26.0f, 40.0f}; // m/s
     float m_cooldown = 0.6f; // seconds between blasts
     float m_cooldownLeft = 0.0f;
     char m_hadFireDisabled = 0;

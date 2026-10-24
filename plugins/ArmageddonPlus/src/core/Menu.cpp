@@ -75,10 +75,14 @@ void Menu::Notice(const std::string& text) {
 
 void Menu::Open() {
     CPlayerPed* player = FindPlayerPed();
-    if (!player || player->m_fHealth <= 0.0f)
+    if (!player || player->m_fHealth <= 0.0f) {
+        Log::Info("Menu: not opened (no player / dead)");
         return;
+    }
     // controls already off = cutscene / mission freeze: don't interfere
     if (!Command<Commands::IS_PLAYER_CONTROL_ON>(0)) {
+        Log::Info("Menu: not opened, the game has CJ's controls off (cutscene / mission / another script)");
+        Notice("The game has CJ's controls off right now");
         Sound(AE_FRONTEND_ERROR);
         return;
     }

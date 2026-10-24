@@ -26,7 +26,7 @@ Shortcuts let you switch powers on and off without opening the menu. They're mos
 
 1. Open the menu (F10), select the power, and press **Insert**.
 2. Press the key you want, e.g. **X**. The footer confirms "Flight: X".
-3. Close the menu. Now **X** turns Flight on, at the last level you used, and off again.
+3. Close the menu. Now each press of **X** steps Flight up: **off → level 1 → level 2 → level 3 → off**. Powers without levels just toggle on/off.
 
 - One key can only belong to one power. Binding a key that's already in use moves it, and the footer tells you from which power.
 - You can't bind keys the menu uses (arrows, Enter, Insert, Delete, F10), mouse buttons or **F1**. F1 makes GTA SA stop reading the keyboard.
@@ -121,17 +121,17 @@ CJ runs much faster and jumps much higher. Just run and jump as usual.
 - ini: `Multiplier1-3`, `AnimSpeed1-3` (leg speed, visual only), `Jump1-3` (take-off speed; 0 = normal jump).
 
 ## Explosion Punch
-Every melee hit (fists, bat, katana...) makes the victim explode. Punching a car blows the car up.
+Every melee hit (fists, bat, katana...) **launches the victim** away from CJ, blows it up, sets off a **ring of explosions** around it and sends out a **shockwave** that throws nearby people, cars and objects. Punching a car does the same to the car.
 
-| Level | Blast |
+| Level | Each punch |
 |---|---|
-| 1 | Grenade |
-| 2 | Rocket |
-| 3 | Car bomb + camera shake |
+| 1 | Car-bomb blast, 2-blast ring (3 m), 10 m shockwave at 18 m/s, victim launched at 25 m/s |
+| 2 | Car-bomb blast, 4-blast ring (5 m), 16 m shockwave at 30 m/s, victim launched at 40 m/s |
+| 3 | Aircraft-size blast, 7-blast ring (8 m), 26 m shockwave at 48 m/s, victim launched at 60 m/s |
 
 - CJ is immune to explosions while it's on, including enemy rockets.
 - Guns don't trigger it.
-- ini: `Cooldown` (seconds between blasts; one swing = one blast).
+- ini: `RingBlasts1-3`, `RingRadius1-3`, `ShockRadius1-3`, `ShockSpeed1-3`, `Launch1-3`, `Cooldown` (one swing = one blast).
 
 ## Telekinesis
 *Mouse power.* CJ draws a Desert Eagle that can't fire; it's only there for the crosshair.
@@ -145,9 +145,9 @@ Every melee hit (fists, bat, katana...) makes the victim explode. Punching a car
 
 | Level | Throw speed |
 |---|---|
-| 1 | 25 m/s |
-| 2 | 45 m/s |
-| 3 | 80 m/s |
+| 1 | 40 m/s |
+| 2 | 80 m/s |
+| 3 | 140 m/s |
 
 - Buildings can't be grabbed. Lamp posts and other fixed props may not move.
 - The weapon CJ had in the pistol slot comes back when you turn Telekinesis off.
@@ -163,24 +163,25 @@ Every melee hit (fists, bat, katana...) makes the victim explode. Punching a car
 
 | Level | Radius | Push | Pull |
 |---|---|---|---|
-| 1 | 10 m | 12 m/s | 10 m/s |
-| 2 | 16 m | 22 m/s | 16 m/s |
-| 3 | 25 m | 40 m/s | 26 m/s |
+| 1 | 14 m | 25 m/s | 16 m/s |
+| 2 | 24 m | 45 m/s | 26 m/s |
+| 3 | 40 m | 80 m/s | 40 m/s |
 
 - ini: `Radius1-3`, `PushSpeed1-3`, `PullSpeed1-3`, `Cooldown`.
 
 ## Lightning Strike
 *Mouse power.* A small blue crosshair appears in the middle of the screen. Point the camera at a spot and click **LMB**: a lightning bolt hits it.
 
-| Level | Blast |
+| Level | Strike |
 |---|---|
-| 1 | Grenade |
-| 2 | Rocket |
-| 3 | Car bomb + fire |
+| 1 | 1 bolt, car-bomb-size blast, 12 m shockwave at 24 m/s |
+| 2 | 3 bolts within 7 m, car-bomb blasts + fire, 20 m shockwave at 40 m/s |
+| 3 | **Storm:** 6 bolts within 12 m, aircraft-size blast on the target, fire everywhere, 32 m shockwave at 60 m/s |
 
 - Pointing at the sky does nothing, because there's nothing to hit.
+- CJ is explosion-proof while Lightning Strike is on, so striking right next to yourself is safe.
+- ini: `Bolts1-3`, `Spread1-3`, `ShockRadius1-3`, `ShockSpeed1-3`, `Range`, `Cooldown`.
 - Bullet Time doesn't slow down the bolt animation.
-- ini: `Range`, `Cooldown`.
 
 ## Fire Trail
 CJ leaves a trail of fire wherever he runs. In a car, the flames appear behind the car. He and his current car are fireproof.

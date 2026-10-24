@@ -45,7 +45,7 @@ private:
     void EquipAimWeapon(CPlayerPed* player);
     void RestoreWeapons(CPlayerPed* player);
 
-    float m_throwSpeed[kLevels] = {25.0f, 45.0f, 80.0f}; // m/s
+    float m_throwSpeed[kLevels] = {40.0f, 80.0f, 140.0f}; // m/s
     float m_range = 80.0f; // how far the crosshair can grab
     eWeaponType m_aimWeapon = WEAPONTYPE_DESERT_EAGLE;
 
